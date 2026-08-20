@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCore Health - Ficha del Paciente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .profile-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; }
+    .patient-avatar-lg { width: 72px; height: 72px; border-radius: 12px; background: var(--primary-light); color: var(--primary); font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 1rem; border-top: 1px solid #f1f5f9; padding-top: 1rem; }
+    .kpi-box { background: var(--bg-subtle); padding: 0.75rem; border-radius: 8px; text-align: center; }
+    .medical-note { background: var(--bg-subtle); border-left: 3px solid var(--primary); padding: 0.75rem; border-radius: 6px; font-size: 0.78rem; color: var(--text-main); margin-bottom: 0.85rem; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside>
+      <div>
+        <div class="brand">MediCore Health</div>
+        <ul class="nav-list" style="margin-top: 2rem;">
+          <li><a href="03-recepcion-dashboard.html" class="nav-link">📊 Dashboard</a></li>
+          <li><a href="07-paciente-detalle.html" class="nav-link active">👤 Pacientes</a></li>
+          <li><a href="10-gestion-turnos-timeline.html" class="nav-link">📅 Turnos</a></li>
+          <li><a href="02-configuracion-usuarios.html" class="nav-link">⚙️ Settings</a></li>
+        </ul>
+      </div>
+      <div>
+        <a href="index.html" style="color:#ef4444; font-weight:700; font-size:0.8rem; text-decoration:none;">← Volver al Índice</a>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header>
+        <div class="search-input">
+          🔍 <input type="text" placeholder="Buscar pacientes...">
+        </div>
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);">Dr. Smith (DIRECTOR MÉDICO)</div>
+      </header>
+
+      <div class="page-padding">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+          <h1 style="font-size:1.5rem; font-weight:800; color:#0f172a;">Información del Paciente</h1>
+          <div style="display:flex; gap:0.5rem;">
+            <a href="#" class="btn btn-secondary">✏️ Editar Paciente</a>
+            <a href="04-registrar-turno-modal.html" class="btn btn-primary">⊕ Nuevo Turno</a>
+          </div>
+        </div>
+
+        <div class="profile-grid">
+          <!-- Main Profile Info -->
+          <div class="card">
+            <div style="display:flex; gap:1.25rem; align-items:flex-start; margin-bottom:1.5rem;">
+              <div class="patient-avatar-lg">VR</div>
+              <div>
+                <h2 style="font-size:1.3rem; font-weight:800; color:#0f172a;">Valentina Rossi</h2>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">🪪 DNI: 34.567.890 • 📅 24 Mayo, 1992 (32 años) • ♀ Femenino</div>
+                <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:0.5rem; font-size:0.8rem; color:var(--text-main); margin-top:0.75rem;">
+                  <div>📞 +54 11 4567-8901</div>
+                  <div>✉️ v.rossi@mail.com</div>
+                  <div>📍 Av. Santa Fe 2450, Piso 4, CABA</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpi-row">
+              <div class="kpi-box">
+                <div style="font-size:0.68rem; color:var(--text-light); font-weight:700; text-transform:uppercase;">Próximo Turno</div>
+                <div style="font-size:0.95rem; font-weight:800; color:var(--primary); margin-top:0.2rem;">24 Oct 10:30 AM</div>
+              </div>
+              <div class="kpi-box">
+                <div style="font-size:0.68rem; color:var(--text-light); font-weight:700; text-transform:uppercase;">Total Turnos</div>
+                <div style="font-size:1.1rem; font-weight:800; color:#0f172a; margin-top:0.2rem;">18</div>
+              </div>
+              <div class="kpi-box">
+                <div style="font-size:0.68rem; color:var(--text-light); font-weight:700; text-transform:uppercase;">Atendidos</div>
+                <div style="font-size:1.1rem; font-weight:800; color:#166534; margin-top:0.2rem;">14</div>
+              </div>
+              <div class="kpi-box">
+                <div style="font-size:0.68rem; color:var(--text-light); font-weight:700; text-transform:uppercase;">Cancelados</div>
+                <div style="font-size:1.1rem; font-weight:800; color:#b91c1c; margin-top:0.2rem;">2</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Próximo Turno Card -->
+          <div class="card" style="margin-bottom:0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem;">
+              <span style="font-size:0.85rem; font-weight:800; color:#0f172a;">⏱️ Próximo Turno</span>
+              <span class="badge badge-confirmado">CONFIRMADO</span>
+            </div>
+
+            <div style="font-weight:700; font-size:0.95rem; color:#0f172a;">Dr. Alejandro Rossi</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.75rem;">Cardiología</div>
+
+            <div style="font-size:0.8rem; background:var(--bg-subtle); padding:0.65rem; border-radius:6px; margin-bottom:0.85rem;">
+              <div>FECHA: <strong>Oct 24, 2023</strong></div>
+              <div>HORA: <strong>10:30 AM</strong></div>
+              <div>UBICACIÓN: Consultorio 4 - Ala Norte</div>
+            </div>
+
+            <a href="08-turno-detalle.html" class="btn btn-primary" style="width:100%;">Ver Detalle</a>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-top:0.5rem;">
+              <a href="05-modificar-turno.html" class="btn btn-secondary" style="font-size:0.75rem;">Reprogramar</a>
+              <a href="06-cancelar-turno-modal.html" class="btn btn-secondary" style="font-size:0.75rem; color:#ef4444;">Cancelar</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Grid: Historial & Medical Detail -->
+        <div class="bottom-grid">
+          <!-- Historial -->
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+              <h3 style="font-size:1rem; font-weight:800;">Historial de Turnos</h3>
+              <div style="font-size:0.75rem; color:var(--text-muted);">Estado: Todos | Especialidad</div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Médico</th>
+                  <th>Especialidad</th>
+                  <th>Estado</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>12 Sep 2023</td>
+                  <td>14:20</td>
+                  <td>Dr. Miguel Blanco</td>
+                  <td>Clínica Médica</td>
+                  <td><span class="badge badge-attended">ATENDIDO</span></td>
+                  <td><a href="08-turno-detalle.html" style="color:var(--primary); font-weight:700; text-decoration:none;">Ver</a></td>
+                </tr>
+                <tr>
+                  <td>15 Ago 2023</td>
+                  <td>09:15</td>
+                  <td>Dra. Lucia Mendez</td>
+                  <td>Dermatología</td>
+                  <td><span class="badge badge-attended">ATENDIDO</span></td>
+                  <td><a href="08-turno-detalle.html" style="color:var(--primary); font-weight:700; text-decoration:none;">Ver</a></td>
+                </tr>
+                <tr>
+                  <td>02 Jul 2023</td>
+                  <td>16:45</td>
+                  <td>Dr. Alejandro Rossi</td>
+                  <td>Cardiología</td>
+                  <td><span class="badge badge-cancelado">CANCELADO</span></td>
+                  <td><a href="08-turno-detalle.html" style="color:var(--primary); font-weight:700; text-decoration:none;">Ver</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Detalle Médico Sidebar Card -->
+          <div class="card">
+            <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:0.75rem;">Detalle de Turno <span style="font-size:0.75rem; color:var(--text-muted);">#A-8923</span></h3>
+
+            <div class="medical-note">
+              <strong>🩺 Diagnóstico Anterior</strong>
+              <div>Hipertensión arterial controlada. Se recomienda seguimiento trimestral.</div>
+            </div>
+
+            <div class="medical-note" style="border-left-color:#166534;">
+              <strong>💊 Medicación Actual</strong>
+              <div>• Enalapril 10mg - 1 comp/día<br>• Aspirina 100mg - 1 comp/día</div>
+            </div>
+
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:1rem;">
+              <strong>📝 Notas de Consulta (12 SEP 2023):</strong><br>
+              Paciente refiere mareos ocasionales. Signos vitales normales.
+            </div>
+
+            <button class="btn btn-secondary" style="width:100%;">Ver Historia Clínica Completa</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

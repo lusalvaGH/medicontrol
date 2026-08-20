@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCore Health - Vista Mensual de Turnos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .month-grid-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-bottom: 2rem; }
+    .month-day-header { text-align: center; font-weight: 800; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; padding: 0.5rem; background: white; border-radius: 6px; border: 1px solid var(--border-color); }
+    .month-day-card { background: white; border: 1px solid var(--border-color); border-radius: 10px; padding: 0.6rem; min-height: 105px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; cursor: pointer; }
+    .month-day-card:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+    .month-day-card.other-month { background: var(--bg-subtle); opacity: 0.5; cursor: default; }
+    .month-day-number { font-size: 0.9rem; font-weight: 800; color: #0f172a; }
+    .month-day-badge { font-size: 0.68rem; font-weight: 700; padding: 0.25rem 0.4rem; border-radius: 6px; margin-top: 0.25rem; display: block; text-align: center; }
+    .view-tabs { display: flex; background: var(--border-color); padding: 3px; border-radius: 8px; font-size: 0.78rem; }
+    .tab-btn { border: none; padding: 0.4rem 0.85rem; border-radius: 6px; font-weight: 700; cursor: pointer; background: transparent; color: var(--text-muted); text-decoration: none; display: inline-block; }
+    .tab-btn.active { background: white; color: var(--primary); box-shadow: var(--shadow-sm); }
+    .drag-hint { font-size: 0.75rem; color: var(--primary); font-weight: 700; background: var(--primary-light); padding: 0.4rem 0.8rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 0.4rem; }
+
+    /* Barra de Selección de Especialidad & Clientes */
+    .filter-bar-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .spec-selector { display: flex; align-items: center; gap: 0.5rem; }
+    .spec-select-input { padding: 0.55rem 0.9rem; border-radius: 8px; border: 1px solid var(--border-dark); font-weight: 700; font-size: 0.85rem; background: var(--bg-subtle); color: var(--text-dark); cursor: pointer; outline: none; }
+
+    /* Grilla de Selector de Horarios en Pop-up */
+    .full-time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.5rem; max-height: 180px; overflow-y: auto; padding-right: 0.2rem; }
+    .time-slot-btn { background: var(--bg-subtle); border: 1px solid var(--border-color); padding: 0.45rem 0.25rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: var(--text-main); text-align: center; cursor: pointer; transition: all 0.15s; }
+    .time-slot-btn:hover { background: #e0f2fe; color: var(--primary); border-color: var(--primary); }
+    .time-slot-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 800; box-shadow: 0 2px 4px rgba(0,71,151,0.2); }
+
+    /* Modal de Lista Completa de Clientes / Pacientes */
+    .client-list-modal { width: 100%; max-width: 600px; }
+    .client-item-card { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); }
+    .client-item-card:hover { background: var(--bg-subtle); }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside>
+      <div>
+        <div class="brand">MediCore Health</div>
+        <ul class="nav-list" style="margin-top:2rem;">
+          <li><a href="03-recepcion-dashboard.html" class="nav-link">📊 Dashboard</a></li>
+          <li><a href="07-paciente-detalle.html" class="nav-link">👤 Patients</a></li>
+          <li><a href="10b-turnos-mes.html" class="nav-link active">📅 Gestión de Turnos</a></li>
+          <li><a href="02-configuracion-usuarios.html" class="nav-link">⚙️ Settings</a></li>
+        </ul>
+      </div>
+      <div>
+        <a href="index.html" style="color:#ef4444; font-weight:700; font-size:0.8rem; text-decoration:none;">← Volver al Índice</a>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header>
+        <div class="search-input">
+          🔍 <input type="text" placeholder="Buscar paciente o médico...">
+        </div>
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);">Dr. Alejandro Rossi (DIRECTOR MÉDICO)</div>
+      </header>
+
+      <div class="page-padding">
+        
+        <!-- Stats -->
+        <div class="grid-4" style="margin-bottom: 1.5rem;">
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Total Mes (Octubre)</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#0f172a; margin-top:0.2rem;">780</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Confirmados</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#166534; margin-top:0.2rem;">540</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Pendientes</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#b45309; margin-top:0.2rem;">180</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">En Curso</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#3730a3; margin-top:0.2rem;">60</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARRA DE FILTRADO DE ESPECIALIDAD & TODOS LOS CLIENTES -->
+        <div class="filter-bar-card">
+          <div class="spec-selector">
+            <span style="font-size:0.82rem; font-weight:800; color:#0f172a;">🩺 Especialidad:</span>
+            <select class="spec-select-input" id="specFilterSelectMonth">
+              <option value="ALL">Todas las Especialidades</option>
+              <option value="Cardiología">Cardiología</option>
+              <option value="Pediatría">Pediatría</option>
+              <option value="Traumatología">Traumatología</option>
+              <option value="Clínica Médica">Clínica Médica</option>
+            </select>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <button class="btn btn-secondary" onclick="openAllClientsModal()">👥 Todos los Clientes / Pacientes</button>
+            <div class="drag-hint">🤚 Tocá cualquier día del mes para ver o editar sus turnos</div>
+          </div>
+        </div>
+
+        <!-- Controls / Switch Vistas -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <a href="04-registrar-turno-modal.html" class="btn btn-primary">⊕ Nuevo Turno</a>
+            <span style="font-size:1.1rem; font-weight:800; color:#0f172a;">Octubre 2023</span>
+          </div>
+
+          <div class="view-tabs">
+            <a href="10-gestion-turnos-timeline.html" class="tab-btn">Día</a>
+            <a href="10a-turnos-semana.html" class="tab-btn">Semana</a>
+            <a href="10b-turnos-mes.html" class="tab-btn active">Mes</a>
+          </div>
+        </div>
+
+        <!-- ÚNICA VISTA DE TURNOS: GRILLA MENSUAL -->
+        <div class="month-grid-container">
+          <div class="month-day-header">LU</div>
+          <div class="month-day-header">MA</div>
+          <div class="month-day-header">MI</div>
+          <div class="month-day-header">JU</div>
+          <div class="month-day-header">VI</div>
+          <div class="month-day-header">SÁ</div>
+          <div class="month-day-header">DO</div>
+
+          <!-- Días de mes anterior -->
+          <div class="month-day-card other-month"><span class="month-day-number">25</span></div>
+          <div class="month-day-card other-month"><span class="month-day-number">26</span></div>
+          <div class="month-day-card other-month"><span class="month-day-number">27</span></div>
+          <div class="month-day-card other-month"><span class="month-day-number">28</span></div>
+          <div class="month-day-card other-month"><span class="month-day-number">29</span></div>
+          <div class="month-day-card other-month"><span class="month-day-number">30</span></div>
+
+          <!-- Días del Mes con pop-up modal -->
+          <div class="month-day-card" onclick="openEditModal('Juan Pérez', 'Dr. Roberto Gómez', 'Cardiología', '08:30 AM', '01 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">1</span>
+            <span class="month-day-badge badge-confirmado">18 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Marta Gómez', 'Dra. Espinoza', 'Cardiología', '09:00 AM', '02 de Octubre', 'EN CURSO')">
+            <span class="month-day-number">2</span>
+            <span class="month-day-badge badge-confirmado">22 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Carlos Lopez', 'Dr. Castro', 'Clínica', '10:00 AM', '03 de Octubre', 'PENDIENTE')">
+            <span class="month-day-number">3</span>
+            <span class="month-day-badge badge-pendiente">15 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Ana Martinez', 'Dra. María Fernández', 'Pediatría', '11:00 AM', '04 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">4</span>
+            <span class="month-day-badge badge-confirmado">26 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Lucía Mendez', 'Dr. Alejandro Rossi', 'Cardiología', '02:00 PM', '05 de Octubre', 'EN CURSO')">
+            <span class="month-day-number">5</span>
+            <span class="month-day-badge badge-encurso">30 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Diego Torres', 'Dr. Martínez', 'Traumatología', '03:00 PM', '06 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">6</span>
+            <span class="month-day-badge badge-confirmado">12 Turnos</span>
+          </div>
+          <div class="month-day-card other-month">
+            <span class="month-day-number">7</span>
+            <span style="font-size:0.68rem; color:var(--text-muted);">Cerrado</span>
+          </div>
+
+          <!-- Semana 2 -->
+          <div class="month-day-card" onclick="openEditModal('Valeria Fernandez', 'Dr. Roberto Gómez', 'Cardiología', '08:30 AM', '08 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">8</span>
+            <span class="month-day-badge badge-confirmado">24 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Roberto Silva', 'Dr. Martínez', 'Traumatología', '09:00 AM', '09 de Octubre', 'EN CURSO')">
+            <span class="month-day-number">9</span>
+            <span class="month-day-badge badge-confirmado">28 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Julia Velez', 'Dr. Esteban Castro', 'Clínica Médica', '10:30 AM', '10 de Octubre', 'PENDIENTE')">
+            <span class="month-day-number">10</span>
+            <span class="month-day-badge badge-encurso">32 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Fernando Torres', 'Dr. Alejandro Rossi', 'Pediatría', '12:15 PM', '11 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">11</span>
+            <span class="month-day-badge badge-confirmado">25 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Sofia Carranza', 'Dra. Maria Garcia', 'Cardiología', '09:00 AM', '12 de Octubre', 'PENDIENTE')">
+            <span class="month-day-number">12</span>
+            <span class="month-day-badge badge-pendiente">19 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Mateo Fernandez', 'Dr. Julian Rossi', 'Cardiología', '10:30 AM', '13 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">13</span>
+            <span class="month-day-badge badge-confirmado">14 Turnos</span>
+          </div>
+          <div class="month-day-card other-month">
+            <span class="month-day-number">14</span>
+            <span style="font-size:0.68rem; color:var(--text-muted);">Cerrado</span>
+          </div>
+
+          <!-- Semana 3 -->
+          <div class="month-day-card" onclick="openEditModal('Lucia Martinez', 'Dr. Roberto Gómez', 'Cardiología', '09:00 AM', '15 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">15</span>
+            <span class="month-day-badge badge-confirmado">30 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Roberto Sanchez', 'Dra. Espinoza', 'Cardiología', '09:30 AM', '16 de Octubre', 'PENDIENTE')">
+            <span class="month-day-number">16</span>
+            <span class="month-day-badge badge-pendiente">22 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Ana Clara Garcia', 'Dr. Martínez', 'Traumatología', '11:15 AM', '17 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">17</span>
+            <span class="month-day-badge badge-confirmado">27 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Clara Ruiz', 'Dr. Juan Pérez', 'Pediatría', '10:45 AM', '18 de Octubre', 'EN CURSO')">
+            <span class="month-day-number">18</span>
+            <span class="month-day-badge badge-encurso">35 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Eduardo Rodríguez', 'Dra. Maria Garcia', 'Cardiología', '09:00 AM', '19 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">19</span>
+            <span class="month-day-badge badge-confirmado">28 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Martin Lopez', 'Dr. Roberto Sánchez', 'Clínica Médica', '10:00 AM', '20 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">20</span>
+            <span class="month-day-badge badge-confirmado">16 Turnos</span>
+          </div>
+          <div class="month-day-card other-month">
+            <span class="month-day-number">21</span>
+            <span style="font-size:0.68rem; color:var(--text-muted);">Cerrado</span>
+          </div>
+
+          <!-- Semana 4 -->
+          <div class="month-day-card" onclick="openEditModal('Juan Pérez', 'Dr. Roberto Gómez', 'Cardiología', '08:30 AM', '22 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">22</span>
+            <span class="month-day-badge badge-confirmado">32 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Marta Gómez', 'Dra. Espinoza', 'Cardiología', '08:15 AM', '23 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">23</span>
+            <span class="month-day-badge badge-confirmado">32 Turnos</span>
+          </div>
+          <div class="month-day-card" style="border:2px solid var(--primary); background:#e0f2fe;" onclick="openEditModal('Julia Velez', 'Dr. Esteban Castro', 'Clínica Médica', '10:30 AM', '24 de Octubre', 'PENDIENTE')">
+            <span class="month-day-number" style="color:var(--primary);">24</span>
+            <span class="month-day-badge badge-encurso">42 Turnos ⭐</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Carlos Lopez', 'Dr. Castro', 'Clínica', '09:15 AM', '25 de Octubre', 'PENDIENTE')">
+            <span class="month-day-number">25</span>
+            <span class="month-day-badge badge-pendiente">38 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Diego Torres', 'Dr. Roberto Gómez', 'Cardiología', '10:00 AM', '26 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">26</span>
+            <span class="month-day-badge badge-confirmado">30 Turnos</span>
+          </div>
+          <div class="month-day-card" onclick="openEditModal('Sofia Carranza', 'Dra. Maria Garcia', 'Cardiología', '09:00 AM', '27 de Octubre', 'CONFIRMADO')">
+            <span class="month-day-number">27</span>
+            <span class="month-day-badge badge-confirmado">24 Turnos</span>
+          </div>
+          <div class="month-day-card other-month">
+            <span class="month-day-number">28</span>
+            <span style="font-size:0.68rem; color:var(--text-muted);">Cerrado</span>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- POP-UP MODAL EMERGENTE PARA AJUSTES Y CAMBIOS DE TURNO (CON SELECTOR DE TODOS LOS HORARIOS) -->
+  <div class="turn-modal-overlay" id="turnEditModal">
+    <div class="turn-modal-card">
+      <div class="turn-modal-header">
+        <h3>⚙️ Ajustes y Cambios del Turno</h3>
+        <span class="close-modal" onclick="closeEditModal()">✕</span>
+      </div>
+
+      <div class="turn-modal-body">
+        <form onsubmit="saveModalChanges(event)">
+          <div class="form-group">
+            <label>Paciente</label>
+            <input type="text" id="modalPatientInput" class="input-box" required>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Médico Asignado</label>
+              <input type="text" id="modalDoctorInput" class="input-box" required>
+            </div>
+            <div class="form-group">
+              <label>Especialidad</label>
+              <input type="text" id="modalSpecInput" class="input-box" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Día / Fecha</label>
+              <input type="text" id="modalDayInput" class="input-box" required>
+            </div>
+            <div class="form-group">
+              <label>Horario Seleccionado</label>
+              <input type="text" id="modalTimeInput" class="input-box" required readonly style="background:#e0f2fe; color:var(--primary); font-weight:800;">
+            </div>
+          </div>
+
+          <!-- SELECCIÓN DE TODOS LOS HORARIOS DISPONIBLES -->
+          <div class="form-group">
+            <label>Seleccionar Horario Disponible (Hacé clic en cualquier hora)</label>
+            <div class="full-time-grid" id="fullTimeGrid">
+              <div class="time-slot-btn" onclick="selectSlotTime('08:00 AM', this)">08:00 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('08:30 AM', this)">08:30 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('09:00 AM', this)">09:00 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('09:30 AM', this)">09:30 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('10:00 AM', this)">10:00 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('10:30 AM', this)">10:30 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('11:00 AM', this)">11:00 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('11:30 AM', this)">11:30 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('12:00 PM', this)">12:00 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('12:30 PM', this)">12:30 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('01:00 PM', this)">01:00 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('01:30 PM', this)">01:30 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('02:00 PM', this)">02:00 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('02:30 PM', this)">02:30 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('03:00 PM', this)">03:00 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('03:30 PM', this)">03:30 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('04:00 PM', this)">04:00 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('04:30 PM', this)">04:30 PM</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Estado del Turno</label>
+            <select id="modalStatusSelect" class="input-box" style="font-weight:700;">
+              <option value="CONFIRMADO">CONFIRMADO</option>
+              <option value="PENDIENTE">PENDIENTE</option>
+              <option value="EN CURSO">EN CURSO</option>
+              <option value="CANCELADO">CANCELADO</option>
+            </select>
+          </div>
+
+          <div class="turn-modal-footer" style="margin: 1.5rem -1.5rem -1.5rem -1.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="cancelTurnFromModal()" style="color:#ef4444;">❌ Cancelar Turno</button>
+            <button type="submit" class="btn btn-primary">✓ Guardar Ajustes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE LISTADO COMPLETO DE CLIENTES / PACIENTES -->
+  <div class="turn-modal-overlay" id="allClientsModal">
+    <div class="turn-modal-card client-list-modal">
+      <div class="turn-modal-header">
+        <h3>👥 Todos los Clientes / Pacientes Registrados</h3>
+        <span class="close-modal" onclick="closeAllClientsModal()">✕</span>
+      </div>
+      <div class="turn-modal-body" style="padding:0; max-height:400px; overflow-y:auto;">
+        
+        <div class="client-item-card">
+          <div>
+            <strong style="color:#0f172a;">Juan Pérez</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 35.123.456)</span>
+            <div style="font-size:0.75rem; color:var(--text-muted);">OSDE 310 • Tel: +54 11 4567-8901</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); window.location.href='07-paciente-detalle.html'">Ver Ficha</button>
+        </div>
+
+        <div class="client-item-card">
+          <div>
+            <strong style="color:#0f172a;">Marta Gómez</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 12.333.444)</span>
+            <div style="font-size:0.75rem; color:var(--text-muted);">IAPOS • Tel: +54 11 9876-5432</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); window.location.href='07-paciente-detalle.html'">Ver Ficha</button>
+        </div>
+
+        <div class="client-item-card">
+          <div>
+            <strong style="color:#0f172a;">Roberto Silva</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 34.111.999)</span>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Particular • Tel: +54 11 2233-4455</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); window.location.href='07-paciente-detalle.html'">Ver Ficha</button>
+        </div>
+
+        <div class="client-item-card">
+          <div>
+            <strong style="color:#0f172a;">Julia Velez</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 22.888.777)</span>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Swiss Medical • Tel: +54 11 6677-8899</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); window.location.href='07-paciente-detalle.html'">Ver Ficha</button>
+        </div>
+
+        <div class="client-item-card">
+          <div>
+            <strong style="color:#0f172a;">Sofia Carranza</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 42.880.111)</span>
+            <div style="font-size:0.75rem; color:var(--text-muted);">OSDE 410 • Tel: +54 11 5544-3322</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); window.location.href='07-paciente-detalle.html'">Ver Ficha</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN TOAST -->
+  <div class="toast-notification" id="toastNotif">
+    <span id="toastMessage"></span>
+  </div>
+
+  <script>
+    const specFilterSelectMonth = document.getElementById('specFilterSelectMonth');
+    specFilterSelectMonth.addEventListener('change', (e) => {
+      showToast(`🩺 Filtrando por especialidad: ${e.target.value === 'ALL' ? 'Todas' : e.target.value}`);
+    });
+
+    function openAllClientsModal() {
+      document.getElementById('allClientsModal').classList.add('show');
+    }
+    function closeAllClientsModal() {
+      document.getElementById('allClientsModal').classList.remove('show');
+    }
+
+    function selectSlotTime(timeStr, btnEl) {
+      document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+      btnEl.classList.add('selected');
+      document.getElementById('modalTimeInput').value = timeStr;
+    }
+
+    function openEditModal(patient, doctor, spec, time, day, status) {
+      document.getElementById('modalPatientInput').value = patient;
+      document.getElementById('modalDoctorInput').value = doctor;
+      document.getElementById('modalSpecInput').value = spec;
+      document.getElementById('modalTimeInput').value = time;
+      document.getElementById('modalDayInput').value = day;
+      document.getElementById('modalStatusSelect').value = status;
+
+      document.querySelectorAll('.time-slot-btn').forEach(b => {
+        if (b.textContent.trim() === time) {
+          b.classList.add('selected');
+        } else {
+          b.classList.remove('selected');
+        }
+      });
+
+      document.getElementById('turnEditModal').classList.add('show');
+    }
+
+    function closeEditModal() {
+      document.getElementById('turnEditModal').classList.remove('show');
+    }
+
+    function saveModalChanges(e) {
+      e.preventDefault();
+      const patient = document.getElementById('modalPatientInput').value;
+      const day = document.getElementById('modalDayInput').value;
+      const time = document.getElementById('modalTimeInput').value;
+
+      closeEditModal();
+      showToast(`✅ Ajustes guardados para ${patient} (${day} - ${time})`);
+    }
+
+    function cancelTurnFromModal() {
+      if (confirm("¿Confirmar cancelación de este turno?")) {
+        closeEditModal();
+        showToast(`❌ Turno cancelado correctamente.`);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotif');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  </script>
+</body>
+</html>

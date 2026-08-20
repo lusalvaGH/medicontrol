@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCore Health - Panel de Recepción</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Backdrop para cerrar pantalla emergente -->
+  <div class="menu-backdrop" id="menuBackdrop" onclick="closePopupMenu()"></div>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside>
+      <div>
+        <div class="brand">MediCore Health</div>
+        <div class="brand-sub">Hospital Management</div>
+
+        <ul class="nav-list">
+          <li><a href="03-recepcion-dashboard.html" class="nav-link active">📊 Dashboard</a></li>
+          <li><a href="10-gestion-turnos-timeline.html" class="nav-link">📅 Gestión de Turnos</a></li>
+          <li><a href="07-paciente-detalle.html" class="nav-link">👤 Pacientes</a></li>
+          <li><a href="09-medico-dashboard.html" class="nav-link">🩺 Agenda General</a></li>
+          <li><a href="02-configuracion-usuarios.html" class="nav-link">⚙️ Mi Perfil</a></li>
+        </ul>
+      </div>
+
+      <div class="user-footer">
+        <a href="index.html" style="color:#ef4444; font-weight:700; font-size:0.8rem; text-decoration:none; display:block; margin-bottom:0.75rem;">← Volver al Índice</a>
+        <div style="font-size:0.8rem; font-weight:700;">OP Operador Central</div>
+        <div style="font-size:0.7rem; color:var(--text-muted);">TURNO MAÑANA</div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-area">
+      <header>
+        <div class="search-input">
+          🔍 <input type="text" placeholder="Buscar paciente o médico...">
+        </div>
+        <div class="top-actions">
+          <a href="04-registrar-turno-modal.html" class="btn btn-primary">⊕ Registrar Turno</a>
+          <a href="07-paciente-detalle.html" class="btn btn-secondary">👤+ Nuevo Paciente</a>
+        </div>
+      </header>
+
+      <div class="page-padding">
+        <!-- KPI Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.78rem; font-weight:700; color:var(--text-muted);">Turnos del día</div>
+              <div class="stat-val">48</div>
+            </div>
+            <div class="stat-icon" style="background:var(--primary-light); color:var(--primary);">📅</div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.78rem; font-weight:700; color:var(--text-muted);">Próximos turnos</div>
+              <div class="stat-val">12</div>
+            </div>
+            <div class="stat-icon" style="background:var(--primary-light); color:var(--primary);">⏱️</div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.78rem; font-weight:700; color:var(--text-muted);">Turnos cancelados</div>
+              <div class="stat-val" style="color:#ef4444;">3</div>
+            </div>
+            <div class="stat-icon" style="background:var(--status-canc-bg); color:#ef4444;">🚫</div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+            <div>
+              <h2 style="font-size:1.2rem; font-weight:800; color:#0f172a;">Turnos del día</h2>
+              <p style="font-size:0.8rem; color:var(--text-muted);">Viernes, 24 de Mayo 2024</p>
+            </div>
+            <div style="display:flex; gap:0.75rem;">
+              <select class="input-box" style="padding:0.4rem 0.75rem; font-size:0.78rem; font-weight:600;"><option>Especialidad: Todas</option></select>
+              <select class="input-box" style="padding:0.4rem 0.75rem; font-size:0.78rem; font-weight:600;"><option>Estado: Todos</option></select>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Horario</th>
+                <th>Paciente</th>
+                <th>Médico</th>
+                <th>Especialidad</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:800; color:var(--primary);">09:00 AM</td>
+                <td>
+                  <div class="patient-cell">
+                    <div class="patient-avatar">ER</div>
+                    <div>
+                      <div style="font-weight:700;">Eduardo Rodríguez</div>
+                      <div style="font-size:0.72rem; color:var(--text-muted);">DNI: 34.552.121</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Dra. Maria Garcia</td>
+                <td>Cardiología</td>
+                <td><span class="badge badge-confirmado">CONFIRMADO</span></td>
+                <td>
+                  <div class="action-btn-trigger" onclick="openActionMenu(event, 'Eduardo Rodríguez')">⋮</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:800; color:var(--primary);">09:30 AM</td>
+                <td>
+                  <div class="patient-cell">
+                    <div class="patient-avatar" style="background:#fef3c7; color:#92400e;">LC</div>
+                    <div>
+                      <div style="font-weight:700;">Lucia Castro</div>
+                      <div style="font-size:0.72rem; color:var(--text-muted);">DNI: 40.112.339</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Dr. Juan Pérez</td>
+                <td>Pediatría</td>
+                <td><span class="badge badge-pendiente">PENDIENTE</span></td>
+                <td>
+                  <div class="action-btn-trigger" onclick="openActionMenu(event, 'Lucia Castro')">⋮</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:800; color:var(--primary);">10:00 AM</td>
+                <td>
+                  <div class="patient-cell">
+                    <div class="patient-avatar" style="background:#fee2e2; color:#b91c1c;">ML</div>
+                    <div>
+                      <div style="font-weight:700;">Martin Lopez</div>
+                      <div style="font-size:0.72rem; color:var(--text-muted);">DNI: 28.190.455</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Dr. Roberto Sánchez</td>
+                <td>Clínica Médica</td>
+                <td><span class="badge badge-cancelado">CANCELADO</span></td>
+                <td>
+                  <div class="action-btn-trigger" onclick="openActionMenu(event, 'Martin Lopez')">⋮</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:800; color:var(--primary);">10:30 AM</td>
+                <td>
+                  <div class="patient-cell">
+                    <div class="patient-avatar" style="background:#e0f2fe; color:#0369a1;">SC</div>
+                    <div>
+                      <div style="font-weight:700;">Sofia Carranza</div>
+                      <div style="font-size:0.72rem; color:var(--text-muted);">DNI: 42.880.111</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Dra. Maria Garcia</td>
+                <td>Cardiología</td>
+                <td><span class="badge badge-attended">ATTENDED</span></td>
+                <td>
+                  <div class="action-btn-trigger" onclick="openActionMenu(event, 'Sofia Carranza')">⋮</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA EMERGENTE / MENÚ DESPLEGABLE DE 3 ACCIONES -->
+  <div class="popup-menu" id="popupActionMenu">
+    <div class="popup-header">
+      <span id="popupPatientName">Acciones del Turno</span>
+      <span style="cursor:pointer; color:var(--text-light);" onclick="closePopupMenu()">✕</span>
+    </div>
+    <ul class="popup-actions-list">
+      
+      <!-- ACCIÓN 1: MODIFICAR TURNO -->
+      <li>
+        <a href="05-modificar-turno.html" class="popup-action-item">
+          <span style="font-size:1rem;">✏️</span>
+          <div>
+            <div>Modificar / Reprogramar</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">Cambiar fecha u horario del turno</div>
+          </div>
+        </a>
+      </li>
+
+      <!-- ACCIÓN 2: VER FICHA DEL PACIENTE -->
+      <li>
+        <a href="07-paciente-detalle.html" class="popup-action-item">
+          <span style="font-size:1rem;">👤</span>
+          <div>
+            <div>Ver Ficha del Paciente</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">Consultar historial médico y datos</div>
+          </div>
+        </a>
+      </li>
+
+      <!-- ACCIÓN 3: CANCELAR TURNO -->
+      <li>
+        <a href="06-cancelar-turno-modal.html" class="popup-action-item danger">
+          <span style="font-size:1rem;">❌</span>
+          <div>
+            <div>Cancelar Turno</div>
+            <div style="font-size:0.7rem; color:#ef4444; font-weight:normal;">Liberar el horario en la agenda</div>
+          </div>
+        </a>
+      </li>
+
+    </ul>
+  </div>
+
+  <!-- SCRIPT PARA GESTIONAR LA PANTALLA EMERGENTE -->
+  <script>
+    const popupActionMenu = document.getElementById('popupActionMenu');
+    const popupPatientName = document.getElementById('popupPatientName');
+    const menuBackdrop = document.getElementById('menuBackdrop');
+    let activeTriggerBtn = null;
+
+    function openActionMenu(event, patientName) {
+      event.stopPropagation();
+      
+      if (activeTriggerBtn) {
+        activeTriggerBtn.classList.remove('active');
+      }
+
+      const triggerBtn = event.currentTarget;
+      triggerBtn.classList.add('active');
+      activeTriggerBtn = triggerBtn;
+
+      popupPatientName.textContent = `Acciones para ${patientName}`;
+
+      const rect = triggerBtn.getBoundingClientRect();
+      const popupWidth = 270;
+
+      let leftPos = rect.left - popupWidth + 20;
+      let topPos = rect.bottom + window.scrollY + 5;
+
+      popupActionMenu.style.left = `${leftPos}px`;
+      popupActionMenu.style.top = `${topPos}px`;
+
+      popupActionMenu.classList.add('show');
+      menuBackdrop.classList.add('show');
+    }
+
+    function closePopupMenu() {
+      popupActionMenu.classList.remove('show');
+      menuBackdrop.classList.remove('show');
+      if (activeTriggerBtn) {
+        activeTriggerBtn.classList.remove('active');
+        activeTriggerBtn = null;
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEDICONTROL - Cancelar Turno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: #f8fafc; color: #0f172a; min-height: 100vh; }
+    header { background: #0f172a; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: #38bdf8; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    .container { max-width: 650px; margin: 2rem auto; padding: 0 1.5rem; }
+    .card { background: white; border-radius: 12px; border: 1px solid #fee2e2; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    h2 { font-size: 1.4rem; font-weight: 800; color: #dc2626; margin-bottom: 0.5rem; }
+    p.desc { font-size: 0.88rem; color: #64748b; margin-bottom: 1.5rem; }
+    .info-box { background: #fff5f5; border: 1px solid #fecaca; padding: 1rem; border-radius: 8px; font-size: 0.88rem; margin-bottom: 1.25rem; color: #991b1b; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 0.4rem; }
+    select, textarea { width: 100%; padding: 0.7rem 0.9rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; outline: none; }
+    .actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+    .btn { padding: 0.7rem 1.25rem; border-radius: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer; border: none; text-decoration: none; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="font-weight: 800;">MEDICONTROL • Recepción</div>
+    <a href="consultar.html">← Volver a la Lista</a>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Cancelar Turno Médico (#101)</h2>
+      <p class="desc">Caso de Uso: Cancelar Turno (Recepcionista)</p>
+
+      <div class="info-box">
+        ⚠️ <strong>Atención:</strong> Vas a cancelar el turno de <strong>Juan Pérez</strong> programado para el <strong>14/08/2026 a las 08:30 hs</strong> con el Dr. Roberto Gómez. Esta acción liberará el horario en la agenda médica.
+      </div>
+
+      <form onsubmit="event.preventDefault(); alert('¡Turno cancelado y horario liberado! (Simulación)'); window.location.href='consultar.html';">
+        <div class="form-group">
+          <label>Motivo de Cancelación (Requerido según ERD)</label>
+          <select required>
+            <option value="">Seleccionar motivo...</option>
+            <option>Aviso previo del paciente</option>
+            <option>Ausencia del profesional médico</option>
+            <option>Reagendamiento solicitado</option>
+            <option>Fuerza mayor / Emergencia</option>
+            <option>Otro motivo</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Detalle adicional (Opcional)</label>
+          <textarea rows="3" placeholder="Ingresar más información sobre el motivo de cancelación..."></textarea>
+        </div>
+
+        <div class="actions">
+          <a href="consultar.html" class="btn btn-secondary">Atrás</a>
+          <button type="submit" class="btn btn-danger">Confirmar Cancelación de Turno</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

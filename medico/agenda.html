@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEDICONTROL - Agenda Médica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: #f8fafc; color: #0f172a; min-height: 100vh; }
+    header { background: #0f172a; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: #38bdf8; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    
+    .container { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+    .header-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; }
+    
+    .med-info h2 { font-size: 1.4rem; font-weight: 800; }
+    .med-info p { color: #64748b; font-size: 0.88rem; }
+    
+    .date-picker input { padding: 0.6rem 0.9rem; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 600; }
+    
+    .agenda-list { display: flex; flex-direction: column; gap: 0.85rem; }
+    .agenda-item { background: white; border-radius: 10px; border: 1px solid #e2e8f0; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    
+    .time-slot { background: #e0f2fe; color: #0369a1; font-weight: 800; padding: 0.5rem 0.9rem; border-radius: 8px; font-size: 0.95rem; min-width: 90px; text-align: center; }
+    .patient-details h4 { font-size: 1rem; font-weight: 700; color: #0f172a; }
+    .patient-details p { font-size: 0.82rem; color: #64748b; margin-top: 0.2rem; }
+    
+    .status-pill { padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+    .status-pill.atendido { background: #dcfce7; color: #15803d; }
+    .status-pill.espera { background: #fef3c7; color: #b45309; }
+    .status-pill.ausente { background: #fee2e2; color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="font-weight: 800;">MEDICONTROL • Portal Médico</div>
+    <div>
+      <a href="../index.html" style="margin-right: 15px;">← Índice</a>
+      <a href="../login.html">Cerrar Sesión</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="header-box">
+      <div class="med-info">
+        <h2>Dr. Roberto Gómez</h2>
+        <p>Especialidad: Cardiología • Caso de Uso: Ver Agenda Médica</p>
+      </div>
+      <div class="date-picker">
+        <input type="date" value="2026-08-14">
+      </div>
+    </div>
+
+    <div class="agenda-list">
+      <div class="agenda-item">
+        <div class="time-slot">08:00 hs</div>
+        <div class="patient-details">
+          <h4>Juan Pérez</h4>
+          <p>DNI: 35.123.456 • OSDE 310 • Motivo: Control cardiológico de rutina</p>
+        </div>
+        <span class="status-pill atendido">Atendido</span>
+      </div>
+
+      <div class="agenda-item">
+        <div class="time-slot">08:30 hs</div>
+        <div class="patient-details">
+          <h4>Esteban Quito</h4>
+          <p>DNI: 29.876.543 • Particular • Motivo: Chequeo aptitud física</p>
+        </div>
+        <span class="status-pill espera">En Espera</span>
+      </div>
+
+      <div class="agenda-item">
+        <div class="time-slot">09:00 hs</div>
+        <div class="patient-details">
+          <h4>Lucía Mendez</h4>
+          <p>DNI: 41.222.333 • IAPOS • Motivo: Ajuste de medicación</p>
+        </div>
+        <span class="status-pill ausente">Pendiente</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

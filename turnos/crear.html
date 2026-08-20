@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEDICONTROL - Crear Turno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: #f8fafc; color: #0f172a; min-height: 100vh; }
+    
+    header { background: #0f172a; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: #38bdf8; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    
+    .container { max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; }
+    .card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    
+    h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; }
+    p.desc { font-size: 0.88rem; color: #64748b; margin-bottom: 1.5rem; }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group.full { grid-column: 1 / -1; }
+    
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 0.4rem; }
+    input, select, textarea { width: 100%; padding: 0.7rem 0.9rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; outline: none; }
+    input:focus, select:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.15); }
+    
+    .alert-info { background: #e0f2fe; border: 1px solid #bae6fd; color: #0369a1; padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    
+    .actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+    .btn { padding: 0.7rem 1.25rem; border-radius: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: #0284c7; color: white; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="font-weight: 800;">MEDICONTROL • Recepción</div>
+    <div>
+      <a href="../index.html" style="margin-right: 15px;">← Índice</a>
+      <a href="consultar.html">Consultar Turnos</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Registrar Nuevo Turno Médico</h2>
+      <p class="desc">Caso de Uso: Registrar Turno (Recepcionista)</p>
+
+      <form onsubmit="event.preventDefault(); alert('¡Turno registrado con éxito! (Simulación)');">
+        <div class="grid">
+          
+          <div class="form-group full">
+            <label>Paciente (DNI o Nombre)</label>
+            <input type="text" placeholder="Buscar paciente por DNI o Nombre... Ej: 35123456 - Juan Pérez" required>
+          </div>
+
+          <div class="form-group">
+            <label>Especialidad</label>
+            <select required>
+              <option value="">Seleccionar especialidad...</option>
+              <option>Cardiología</option>
+              <option>Pediatría</option>
+              <option>Traumatología</option>
+              <option>Clínica General</option>
+              <option>Dermatología</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Médico / Profesional</label>
+            <select required>
+              <option value="">Seleccionar médico...</option>
+              <option>Dr. Roberto Gómez (Cardiología)</option>
+              <option>Dra. María Fernández (Pediatría)</option>
+              <option>Dr. Carlos Ruiz (Traumatología)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Fecha del Turno</label>
+            <input type="date" required>
+          </div>
+
+          <div class="form-group">
+            <label>Horario Disponible</label>
+            <select required>
+              <option value="">Seleccionar hora...</option>
+              <option>08:00 hs</option>
+              <option>08:30 hs</option>
+              <option>09:00 hs</option>
+              <option>09:30 hs</option>
+              <option>10:00 hs</option>
+            </select>
+          </div>
+
+          <div class="form-group full">
+            <label>Observaciones / Motivo de consulta</label>
+            <input type="text" placeholder="Ej: Control de rutina, dolor lumbar, etc.">
+          </div>
+
+        </div>
+
+        <div class="alert-info">
+          ℹ️ <strong>Validación de Disponibilidad:</strong> El sistema verifica automáticamente que el médico no posea superposición de horarios.
+        </div>
+
+        <div class="actions">
+          <a href="../index.html" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Confirmar y Registrar Turno</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

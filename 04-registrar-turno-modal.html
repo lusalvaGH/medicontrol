@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCore Health - Registrar Nuevo Turno (Modal)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #64748b; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .modal-card { background: white; border-radius: 16px; width: 100%; max-width: 540px; box-shadow: var(--shadow-xl); overflow: hidden; }
+    .modal-header { padding: 1.5rem 2rem 1rem 2rem; display: flex; justify-content: space-between; align-items: flex-start; }
+    .close-btn { background: none; border: none; font-size: 1.2rem; color: var(--text-light); cursor: pointer; }
+    .modal-body { padding: 0 2rem 1.5rem 2rem; }
+    .time-pills { display: flex; gap: 0.6rem; }
+    .time-pill { padding: 0.5rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-dark); background: white; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+    .time-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
+    .modal-footer { background: var(--bg-subtle); padding: 1rem 2rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem; }
+  </style>
+</head>
+<body>
+
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h2 style="font-size: 1.3rem; font-weight: 800; color: var(--primary);">Registrar Nuevo Turno</h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem;">Complete los datos para agendar la cita médica.</p>
+      </div>
+      <button class="close-btn" onclick="window.location.href='03-recepcion-dashboard.html'">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <form onsubmit="event.preventDefault(); alert('¡Turno registrado correctamente!'); window.location.href='03-recepcion-dashboard.html';">
+        
+        <div class="form-group">
+          <label>Buscar Paciente</label>
+          <input type="text" class="input-box" value="👤 Ricardo Alarcón" placeholder="DNI o Nombre...">
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Médico</label>
+            <select class="input-box">
+              <option selected>Dr. Julián Martínez</option>
+              <option>Dra. Elena Martínez</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Especialidad</label>
+            <input type="text" class="input-box" value="Cardiología" readonly style="background:var(--border-color); color:var(--text-main);">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Fecha de Turno</label>
+            <input type="text" class="input-box" value="24/10/2023 📅">
+          </div>
+
+          <div class="form-group">
+            <label>Horario Disponible</label>
+            <div class="time-pills">
+              <div class="time-pill">09:00</div>
+              <div class="time-pill selected">09:30</div>
+              <div class="time-pill">10:00</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Motivo de Consulta</label>
+          <textarea class="input-box" rows="3" placeholder="Descripción breve del síntoma o consulta..." style="resize:none;"></textarea>
+        </div>
+
+        <div class="modal-footer" style="margin: 1.5rem -2rem -1.5rem -2rem;">
+          <a href="03-recepcion-dashboard.html" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">✓ Registrar Turno</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>

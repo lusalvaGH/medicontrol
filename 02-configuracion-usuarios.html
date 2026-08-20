@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCore Health - Configuración del Sistema</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .config-grid { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .card-header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .widget-card { background: white; border-radius: 12px; border: 1px solid var(--border-color); padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+    .widget-icon { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside>
+      <div>
+        <div class="brand">MediCore Admin</div>
+        <div class="brand-sub">Reception Portal</div>
+
+        <ul class="nav-list">
+          <li class="nav-item"><a href="03-recepcion-dashboard.html" class="nav-link"><span>📊</span> Dashboard</a></li>
+          <li class="nav-item"><a href="10-gestion-turnos-timeline.html" class="nav-link"><span>📅</span> Appointments</a></li>
+          <li class="nav-item"><a href="07-paciente-detalle.html" class="nav-link"><span>👤</span> Patients</a></li>
+          <li class="nav-item"><a href="02-configuracion-usuarios.html" class="nav-link active"><span>⚙️</span> Settings</a></li>
+        </ul>
+      </div>
+
+      <div class="user-footer">
+        <a href="index.html" style="color:#ef4444; font-weight:700; font-size:0.8rem; text-decoration:none; display:block; margin-bottom:1rem;">← Volver al Índice</a>
+        <div style="display:flex; align-items:center; gap:0.75rem; font-size:0.8rem;">
+          <div style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:700;">AU</div>
+          <div>
+            <div style="font-weight:700;">Admin User</div>
+            <div style="font-size:0.72rem; color:var(--text-muted);">Recepcionista Principal</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-area">
+      <header>
+        <div class="search-input">
+          🔍 <input type="text" placeholder="Buscar en el sistema...">
+        </div>
+        <div style="display:flex; align-items:center; gap:1.25rem; font-size:1.1rem; color:var(--text-muted);">
+          <span>🔔</span>
+          <span>❓</span>
+          <span style="font-size:0.85rem; font-weight:700; color:var(--primary);">MediCore</span>
+        </div>
+      </header>
+
+      <div class="page-padding">
+        <div class="page-header">
+          <h1>Configuración del Sistema</h1>
+          <p>Administre la seguridad de su cuenta y los perfiles de los usuarios del centro médico.</p>
+        </div>
+
+        <div class="config-grid">
+          <!-- Gestión de Seguridad -->
+          <div class="card">
+            <div class="card-title">🛡️ Gestión de Seguridad</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:1.25rem;">Actualizar contraseña de acceso</div>
+
+            <form onsubmit="event.preventDefault(); alert('Contraseña actualizada correctamente.');">
+              <div class="form-group">
+                <label>Contraseña Actual</label>
+                <input type="password" class="input-box" value="••••••••">
+              </div>
+
+              <div class="form-group">
+                <label>Nueva Contraseña</label>
+                <input type="password" class="input-box" value="••••••••">
+              </div>
+
+              <div class="form-group">
+                <label>Confirmar Nueva Contraseña</label>
+                <input type="password" class="input-box" value="••••••••">
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem;">Actualizar Contraseña</button>
+            </form>
+          </div>
+
+          <!-- Gestión de Usuarios y Médicos -->
+          <div class="card">
+            <div class="card-header-flex">
+              <div>
+                <div class="card-title" style="margin-bottom:0.25rem;">Gestión de Usuarios y Médicos</div>
+                <div style="font-size:0.78rem; color:var(--text-muted);">Mostrando todos los perfiles activos e inactivos</div>
+              </div>
+              <button class="btn btn-primary" style="font-size:0.82rem;">👤+ Agregar Nuevo Usuario</button>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Rol</th>
+                  <th>Especialidad</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar">DV</div>
+                      <span style="font-weight:700; color:var(--text-dark);">Dr. Daniel Valencia</span>
+                    </div>
+                  </td>
+                  <td>Médico</td>
+                  <td>Cardiología</td>
+                  <td><span class="badge badge-confirmado">ACTIVO</span></td>
+                  <td><div style="display:flex; gap:0.5rem; color:var(--text-muted); cursor:pointer;"><span>✏️</span> <span>🗑️</span></div></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar" style="background:#fef3c7; color:#92400e;">ML</div>
+                      <span style="font-weight:700; color:var(--text-dark);">Marta López</span>
+                    </div>
+                  </td>
+                  <td>Recepcionista</td>
+                  <td>—</td>
+                  <td><span class="badge badge-confirmado">ACTIVO</span></td>
+                  <td><div style="display:flex; gap:0.5rem; color:var(--text-muted); cursor:pointer;"><span>✏️</span> <span>🗑️</span></div></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar">AM</div>
+                      <span style="font-weight:700; color:var(--text-dark);">Dra. Ana Martínez</span>
+                    </div>
+                  </td>
+                  <td>Médico</td>
+                  <td>Pediatría</td>
+                  <td><span class="badge badge-confirmado">ACTIVO</span></td>
+                  <td><div style="display:flex; gap:0.5rem; color:var(--text-muted); cursor:pointer;"><span>✏️</span> <span>🗑️</span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Bottom Status -->
+        <div class="bottom-grid">
+          <div class="widget-card">
+            <div class="widget-icon" style="background:var(--primary-light); color:var(--primary);">⏱️</div>
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Último Acceso</div>
+              <div style="font-size:0.95rem; font-weight:700; color:var(--text-dark);">Hace 12 minutos</div>
+            </div>
+          </div>
+          <div class="widget-card">
+            <div class="widget-icon" style="background:var(--status-canc-bg); color:var(--status-canc-text);">⚠️</div>
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Alertas Pendientes</div>
+              <div style="font-size:0.95rem; font-weight:700; color:var(--text-dark);">0 Alertas críticas</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

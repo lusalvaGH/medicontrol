@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEDICONTROL - Consulta de Turnos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: #f8fafc; color: #0f172a; min-height: 100vh; }
+    
+    header { background: #0f172a; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: #38bdf8; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    
+    .container { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+    
+    .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .header-actions h2 { font-size: 1.6rem; font-weight: 800; }
+    
+    .btn { padding: 0.6rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; text-decoration: none; border: none; }
+    .btn-primary { background: #0284c7; color: white; }
+    .btn-primary:hover { background: #0369a1; }
+    
+    .filter-card { background: white; border-radius: 12px; padding: 1.25rem; border: 1px solid #e2e8f0; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .filter-card label { display: block; font-size: 0.78rem; font-weight: 700; color: #64748b; margin-bottom: 0.3rem; text-transform: uppercase; }
+    .filter-card input, .filter-card select { width: 100%; padding: 0.55rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem; }
+    
+    .table-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+    th { background: #f1f5f9; color: #475569; font-weight: 700; padding: 0.85rem 1rem; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    tr:hover { background: #f8fafc; }
+    
+    .badge { padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
+    .badge-confirmado { background: #dcfce7; color: #15803d; }
+    .badge-pendiente { background: #fef3c7; color: #b45309; }
+    .badge-cancelado { background: #fee2e2; color: #b91c1c; }
+    
+    .action-links a { color: #0284c7; text-decoration: none; font-weight: 600; font-size: 0.8rem; margin-right: 0.75rem; }
+    .action-links a.danger { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="font-weight: 800;">MEDICONTROL • Recepción</div>
+    <div>
+      <a href="../index.html" style="margin-right: 15px;">← Índice de Pantallas</a>
+      <a href="../login.html">Cerrar Sesión</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="header-actions">
+      <div>
+        <h2>Consultar Turnos Registrados</h2>
+        <p style="color: #64748b; font-size: 0.88rem;">Caso de Uso: Consultar Turnos (Recepcionista / Paciente)</p>
+      </div>
+      <a href="crear.html" class="btn btn-primary">+ Nuevo Turno</a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card">
+      <div>
+        <label>Buscar Paciente / DNI</label>
+        <input type="text" placeholder="DNI o Nombre...">
+      </div>
+      <div>
+        <label>Médico</label>
+        <select>
+          <option value="">Todos los médicos</option>
+          <option>Dr. Roberto Gómez</option>
+          <option>Dra. María Fernández</option>
+        </select>
+      </div>
+      <div>
+        <label>Fecha</label>
+        <input type="date">
+      </div>
+      <div>
+        <label>Estado</label>
+        <select>
+          <option value="">Todos</option>
+          <option>Confirmado</option>
+          <option>Pendiente</option>
+          <option>Cancelado</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha y Hora</th>
+            <th>Paciente</th>
+            <th>DNI</th>
+            <th>Médico / Especialidad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#101</td>
+            <td>14/08/2026 - 08:30 hs</td>
+            <td>Juan Pérez</td>
+            <td>35.123.456</td>
+            <td>Dr. Roberto Gómez <br><span style="font-size:0.75rem; color:#64748b;">Cardiología</span></td>
+            <td><span class="badge badge-confirmado">Confirmado</span></td>
+            <td class="action-links">
+              <a href="modificar.html">Modificar</a>
+              <a href="cancelar.html" class="danger">Cancelar</a>
+            </td>
+          </tr>
+          <tr>
+            <td>#102</td>
+            <td>14/08/2026 - 09:00 hs</td>
+            <td>Ana Martinez</td>
+            <td>40.987.654</td>
+            <td>Dra. María Fernández <br><span style="font-size:0.75rem; color:#64748b;">Pediatría</span></td>
+            <td><span class="badge badge-pendiente">Pendiente</span></td>
+            <td class="action-links">
+              <a href="modificar.html">Modificar</a>
+              <a href="cancelar.html" class="danger">Cancelar</a>
+            </td>
+          </tr>
+          <tr>
+            <td>#103</td>
+            <td>15/08/2026 - 10:30 hs</td>
+            <td>Carlos Lopez</td>
+            <td>28.456.789</td>
+            <td>Dr. Carlos Ruiz <br><span style="font-size:0.75rem; color:#64748b;">Traumatología</span></td>
+            <td><span class="badge badge-cancelado">Cancelado</span></td>
+            <td class="action-links">
+              <span style="color:#94a3b8; font-size:0.8rem;">Sin acciones</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

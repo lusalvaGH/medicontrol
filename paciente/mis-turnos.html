@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEDICONTROL - Mis Turnos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: #f8fafc; color: #0f172a; min-height: 100vh; }
+    header { background: #0f172a; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: #38bdf8; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    
+    .container { max-width: 750px; margin: 2rem auto; padding: 0 1.5rem; }
+    .welcome-box { margin-bottom: 1.5rem; }
+    .welcome-box h2 { font-size: 1.5rem; font-weight: 800; }
+    .welcome-box p { color: #64748b; font-size: 0.88rem; }
+    
+    .appointment-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+    .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; }
+    .date-badge { background: #e0f2fe; color: #0369a1; font-weight: 800; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.88rem; }
+    
+    .app-body h3 { font-size: 1.1rem; font-weight: 700; color: #0f172a; }
+    .app-body p { font-size: 0.85rem; color: #475569; margin-top: 0.3rem; }
+    
+    .doc-reminder { background: #f8fafc; border-left: 3px solid #0284c7; padding: 0.75rem; margin-top: 1rem; border-radius: 4px; font-size: 0.8rem; color: #334155; }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="font-weight: 800;">MEDICONTROL • Paciente</div>
+    <div>
+      <a href="../index.html" style="margin-right: 15px;">← Índice</a>
+      <a href="../login.html">Cerrar Sesión</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="welcome-box">
+      <h2>Hola, Juan Pérez</h2>
+      <p>Consultá tus turnos asignados y recordatorios previos a la atención médica.</p>
+    </div>
+
+    <div class="appointment-card">
+      <div class="app-header">
+        <span class="date-badge">14 de Agosto, 2026 - 08:30 hs</span>
+        <span style="background:#dcfce7; color:#15803d; padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:700;">CONFIRMADO</span>
+      </div>
+      <div class="app-body">
+        <h3>Dr. Roberto Gómez</h3>
+        <p><strong>Especialidad:</strong> Cardiología</p>
+        <p><strong>Lugar:</strong> Consultorio 104 • Planta Baja</p>
+        
+        <div class="doc-reminder">
+          📌 <strong>Documentación importante a presentar:</strong> DNI físico, credencial de obra social (OSDE) y estudios previos (Electrocardiograma reciente si dispone).
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

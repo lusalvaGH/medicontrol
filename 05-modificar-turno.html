@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCore Health - Modificación de Turno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside>
+      <div>
+        <div class="brand">MedCore Admin</div>
+        <ul class="nav-list">
+          <li><a href="03-recepcion-dashboard.html" class="nav-link">📊 Dashboard</a></li>
+          <li><a href="05-modificar-turno.html" class="nav-link active">📅 Turnos</a></li>
+          <li><a href="07-paciente-detalle.html" class="nav-link">👤 Pacientes</a></li>
+          <li><a href="02-configuracion-usuarios.html" class="nav-link">⚙️ Configuración</a></li>
+        </ul>
+      </div>
+      <div>
+        <a href="index.html" style="color:#ef4444; font-weight:700; font-size:0.8rem; text-decoration:none;">← Volver al Índice</a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-area">
+      <header>
+        <div style="font-size:0.85rem; color:var(--text-muted);">🔍 Buscar turnos, pacientes...</div>
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);">Elena Martínez (Recepción A)</div>
+      </header>
+
+      <div class="page-padding">
+        <div class="breadcrumbs">Turnos > Modificar Turno</div>
+        <div class="page-header">
+          <h1>Modificar Turno</h1>
+          <p>Actualice los datos del paciente, la fecha o la hora de consulta.</p>
+        </div>
+
+        <!-- Section 1: Informacion del Paciente -->
+        <div class="card">
+          <div class="card-title">Información Médica y del Paciente</div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Nombre del Paciente</label>
+              <input type="text" class="input-box" value="👤 Valentina Rossi" readonly>
+            </div>
+            <div class="form-group">
+              <label>Médico Asignado</label>
+              <input type="text" class="input-box" value="🏥 Dr. Alejandro Rossi" readonly>
+            </div>
+            <div class="form-group">
+              <label>Especialidad</label>
+              <input type="text" class="input-box" value="🩺 Cardiología" readonly>
+            </div>
+            <div class="form-group">
+              <label>Tipo de Turno</label>
+              <input type="text" class="input-box" value="📋 Consulta de Seguimiento">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Calendario Interactivo & Horarios -->
+        <div class="card">
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Actualizar Horario</span>
+            <span id="availabilityBadge" style="font-size:0.75rem; color:#166534; background:#dcfce7; padding:0.25rem 0.65rem; border-radius:12px; font-weight:700;">
+              🟢 Médico Disponible
+            </span>
+          </div>
+
+          <div class="schedule-grid">
+
+            <!-- CALENDARIO DINÁMICO -->
+            <div class="calendar-widget">
+              <div class="cal-header">
+                <span id="calMonthTitle">Octubre 2023</span>
+                <div class="cal-nav-btns">
+                  <button class="cal-btn" id="prevMonthBtn" title="Mes Anterior">‹</button>
+                  <button class="cal-btn" id="nextMonthBtn" title="Mes Siguiente">›</button>
+                </div>
+              </div>
+
+              <div class="cal-grid" id="calGrid">
+                <!-- Se genera dinámicamente con JavaScript -->
+              </div>
+            </div>
+
+            <!-- PANEL DE HORARIOS DISPONIBLES -->
+            <div style="display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div class="selection-banner">
+                  <div>
+                    <span style="font-size:0.75rem; text-transform:uppercase; font-weight:800; color:#475569; display:block;">FECHA SELECCIONADA</span>
+                    <strong id="selectedDateLabel" style="color:#0f172a; font-size:0.95rem;">Martes, 24 de Octubre de 2023</strong>
+                  </div>
+                  <span style="font-size:1.1rem;">📅</span>
+                </div>
+
+                <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.75rem;">
+                  HORARIOS DISPONIBLES
+                </div>
+
+                <div class="time-grid" id="timeSlotsGrid">
+                  <!-- Se genera dinámicamente según la fecha elegida -->
+                </div>
+              </div>
+
+              <div style="text-align:right; margin-top: 1rem;">
+                <button class="btn btn-primary" id="saveBtn" style="padding:0.85rem 1.75rem;">Guardar Cambios</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT DEL CALENDARIO Y GESTIÓN DE HORARIOS -->
+  <script>
+    const monthNames = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    const dayNames = ["LU", "MA", "MI", "JU", "VI", "SÁ", "DO"];
+
+    let viewYear = 2023;
+    let viewMonth = 9;
+    
+    let selectedDate = new Date(2023, 9, 24);
+    let selectedTime = "10:45 AM";
+
+    const baseTimeSlots = [
+      "08:30 AM", "09:15 AM", "10:45 AM", "11:30 AM",
+      "02:00 PM", "02:45 PM", "03:30 PM", "04:15 PM"
+    ];
+
+    const calMonthTitle = document.getElementById('calMonthTitle');
+    const calGrid = document.getElementById('calGrid');
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const selectedDateLabel = document.getElementById('selectedDateLabel');
+    const timeSlotsGrid = document.getElementById('timeSlotsGrid');
+    const availabilityBadge = document.getElementById('availabilityBadge');
+    const saveBtn = document.getElementById('saveBtn');
+
+    function renderCalendar() {
+      calMonthTitle.textContent = `${monthNames[viewMonth]} ${viewYear}`;
+      calGrid.innerHTML = '';
+
+      dayNames.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'cal-day-name';
+        dayHeader.textContent = day;
+        calGrid.appendChild(dayHeader);
+      });
+
+      const firstDayOfMonth = new Date(viewYear, viewMonth, 1);
+      let startDay = firstDayOfMonth.getDay() - 1;
+      if (startDay === -1) startDay = 6;
+
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+      for (let i = startDay - 1; i >= 0; i--) {
+        const dayEl = document.createElement('div');
+        dayEl.className = 'cal-day other-month';
+        dayEl.textContent = daysInPrevMonth - i;
+        calGrid.appendChild(dayEl);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDateObj = new Date(viewYear, viewMonth, day);
+        const dayEl = document.createElement('div');
+        dayEl.className = 'cal-day';
+        dayEl.textContent = day;
+
+        const dayOfWeek = currentDateObj.getDay();
+        if (dayOfWeek === 0) {
+          dayEl.classList.add('disabled');
+          dayEl.title = "Clínica cerrada los Domingos";
+        }
+
+        if (
+          selectedDate &&
+          selectedDate.getFullYear() === viewYear &&
+          selectedDate.getMonth() === viewMonth &&
+          selectedDate.getDate() === day
+        ) {
+          dayEl.classList.add('active');
+        }
+
+        if (dayOfWeek !== 0) {
+          dayEl.addEventListener('click', () => {
+            selectedDate = currentDateObj;
+            renderCalendar();
+            updateSelectedDateUI();
+            renderTimeSlots();
+          });
+        }
+
+        calGrid.appendChild(dayEl);
+      }
+
+      const totalCells = startDay + daysInMonth;
+      const remainingCells = (42 - totalCells) % 7;
+      for (let day = 1; day <= remainingCells; day++) {
+        const dayEl = document.createElement('div');
+        dayEl.className = 'cal-day other-month';
+        dayEl.textContent = day;
+        calGrid.appendChild(dayEl);
+      }
+    }
+
+    function updateSelectedDateUI() {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      let formatted = selectedDate.toLocaleDateString('es-ES', options);
+      formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+      selectedDateLabel.textContent = formatted;
+
+      const isSaturday = selectedDate.getDay() === 6;
+      if (isSaturday) {
+        availabilityBadge.innerHTML = "🟡 Horario Reducido Sábados";
+        availabilityBadge.style.background = "#fef3c7";
+        availabilityBadge.style.color = "#b45309";
+      } else {
+        availabilityBadge.innerHTML = "🟢 Médico Disponible";
+        availabilityBadge.style.background = "#dcfce7";
+        availabilityBadge.style.color = "#166534";
+      }
+    }
+
+    function renderTimeSlots() {
+      timeSlotsGrid.innerHTML = '';
+      const dayNum = selectedDate.getDate();
+      const isSaturday = selectedDate.getDay() === 6;
+
+      baseTimeSlots.forEach((slot, index) => {
+        if (isSaturday && index >= 4) return;
+
+        const slotEl = document.createElement('div');
+        slotEl.className = 'time-slot';
+        
+        const isBusy = (dayNum + index) % 7 === 0;
+
+        if (isBusy) {
+          slotEl.classList.add('disabled');
+          slotEl.innerHTML = `${slot} <span style="font-size:0.7rem; font-weight:normal;">(Ocupado)</span>`;
+        } else {
+          if (selectedTime === slot) {
+            slotEl.classList.add('selected');
+            slotEl.innerHTML = `${slot} ✓`;
+          } else {
+            slotEl.textContent = slot;
+          }
+
+          slotEl.addEventListener('click', () => {
+            selectedTime = slot;
+            renderTimeSlots();
+          });
+        }
+
+        timeSlotsGrid.appendChild(slotEl);
+      });
+    }
+
+    prevMonthBtn.addEventListener('click', () => {
+      viewMonth--;
+      if (viewMonth < 0) {
+        viewMonth = 11;
+        viewYear--;
+      }
+      renderCalendar();
+    });
+
+    nextMonthBtn.addEventListener('click', () => {
+      viewMonth++;
+      if (viewMonth > 11) {
+        viewMonth = 0;
+        viewYear++;
+      }
+      renderCalendar();
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      const dateText = selectedDate.toLocaleDateString('es-ES', options);
+      
+      alert(`✅ ¡Turno reprogramado con éxito!\n\nPaciente: Valentina Rossi\nMédico: Dr. Alejandro Rossi\nNueva Fecha: ${dateText}\nHorario: ${selectedTime}`);
+      window.location.href = '03-recepcion-dashboard.html';
+    });
+
+    renderCalendar();
+    updateSelectedDateUI();
+    renderTimeSlots();
+  </script>
+</body>
+</html>
