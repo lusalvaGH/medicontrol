@@ -7,21 +7,237 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body style="overflow: hidden; margin: 0; padding: 0; width: 100vw; height: 100vh;">
+  <style>
+    /* VARIABLES DE DISEÑO & RESET */
+    :root {
+      --primary: #004797;
+      --primary-hover: #003673;
+      --primary-light: #e0f2fe;
+      --bg-main: #f0f4f9;
+      --bg-card: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-dark: #0f172a;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f8fafc;
+      color: var(--text-main);
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* CONTENEDOR PRINCIPAL WIREFRAME */
+    .wireframe-app-shell {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* SIDEBAR AZUL FLOTANTE CON DESPLIEGUE AL ACERCAR EL CURSOR */
+    .blue-sidebar-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      z-index: 3000;
+      pointer-events: none;
+    }
+
+    .blue-sidebar {
+      width: 270px;
+      height: 100vh;
+      background: #1d4ed8;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1.25rem 1rem;
+      transform: translateX(-270px);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 6px 0 25px rgba(0, 0, 0, 0.25);
+      pointer-events: auto;
+      position: relative;
+    }
+
+    /* Zona activa de detección en todo el margen izquierdo */
+    .blue-sidebar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: -28px;
+      width: 28px;
+      height: 100vh;
+      background: transparent;
+      pointer-events: auto;
+    }
+
+    .blue-sidebar-container:hover .blue-sidebar,
+    .blue-sidebar:hover,
+    .blue-sidebar.expanded {
+      transform: translateX(0) !important;
+    }
+
+    .blue-brand-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      margin-bottom: 1rem;
+    }
+
+    .blue-brand-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .blue-brand-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+    }
+
+    .blue-nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 160px);
+    }
+
+    .blue-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .blue-nav-item:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+
+    .blue-nav-item.active {
+      background: rgba(255, 255, 255, 0.25);
+      color: white;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    }
+
+    /* ÁREA DE TRABAJO PRINCIPAL & TOP BAR */
+    .wireframe-main-content {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+
+    .wireframe-top-bar {
+      background: white;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .wireframe-empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .empty-icon-circle {
+      width: 110px;
+      height: 110px;
+      background: #e2e8f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .wireframe-iframe-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      margin: 0;
+      padding: 0;
+      display: block;
+      background: white;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 767px) {
+      .blue-sidebar {
+        width: 82vw;
+        max-width: 280px;
+      }
+      .wireframe-top-bar {
+        padding: 0.5rem 1rem;
+        height: 52px;
+      }
+    }
+  </style>
 
   <div class="wireframe-app-shell">
     
     <!-- BARRA FLOTANTE AZUL (SIDEBAR DESPLEGABLE ÚNICAMENTE AL PASAR EL CURSOR POR EL COSTADO IZQUIERDO) -->
     <div class="blue-sidebar-container" id="sidebarContainer">
       <aside class="blue-sidebar" id="blueSidebar">
-        
-        <!-- Solapa visual en el margen izquierdo para desplegar al pasar el cursor o hacer clic -->
-        <div class="blue-sidebar-toggle-handle" onclick="toggleSidebar(event)">
-          <span>☰</span> <span>MENÚ</span>
-        </div>
-
         <div>
           <!-- Header de Marca -->
           <div class="blue-brand-header">
@@ -75,7 +291,6 @@
       <!-- Top Bar de la Aplicación -->
       <div class="wireframe-top-bar">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <button class="btn btn-secondary" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" onclick="toggleSidebar(event)">☰ Menú</button>
           <div style="font-weight: 800; font-size: 1rem; color: #0f172a;" id="topBarTitle">Bienvenido, Recepcionista</div>
         </div>
         
@@ -91,8 +306,7 @@
           📅
         </div>
         <h2 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-bottom: 0.4rem;">Selecciona una opción del menú</h2>
-        <p style="color: var(--text-muted); font-size: 0.92rem; max-width: 420px; line-height: 1.45;">Pasa el cursor por el margen izquierdo (o toca el botón ☰) para desplegar las pantallas del sistema.</p>
-        <button class="btn btn-primary" style="margin-top: 1.25rem; font-size: 0.85rem;" onclick="toggleSidebar(event)">👈 Desplegar Menú de Pantallas</button>
+        <p style="color: var(--text-muted); font-size: 0.92rem; max-width: 420px; line-height: 1.45;">Acerca el cursor al margen izquierdo de la pantalla para desplegar el menú de pantallas del sistema.</p>
       </div>
 
       <!-- 2. VISTA EN VIVO COMPLETA SIN ESPACIOS EN BLANCO -->

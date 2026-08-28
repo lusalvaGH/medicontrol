@@ -7,19 +7,221 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
   <style>
-    body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; }
-    .top-bar { width: 100%; max-width: 480px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
-    .top-bar a { color: var(--primary); text-decoration: none; font-size: 0.85rem; font-weight: 700; }
-    .cards-wrapper { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 2.5rem; }
-    .auth-card { background: white; border-radius: 16px; padding: 2.25rem 2rem; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); text-align: center; }
-    .card-icon { width: 44px; height: 44px; background: var(--primary); color: white; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.3rem; margin-bottom: 1rem; }
-    .subtitle { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.25rem; margin-bottom: 1.5rem; }
-    .divider { font-size: 0.75rem; color: var(--text-light); margin: 1.25rem 0; text-transform: uppercase; letter-spacing: 0.5px; }
-    .switch-link { font-size: 0.83rem; color: var(--text-muted); }
-    .switch-link a { color: var(--primary); text-decoration: none; font-weight: 700; }
-    .secure-tag { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text-muted); margin-top: 1rem; }
+    /* ==========================================================================
+       01 - LOGIN Y REGISTRO | MEDICORE HEALTH
+       CSS Específico y Autónomo de la Pantalla
+       ========================================================================== */
+    :root {
+      --primary: #004797;
+      --primary-hover: #003673;
+      --primary-light: #e0f2fe;
+      --bg-main: #f0f4f9;
+      --bg-card: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-dark: #0f172a;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* BARRA SUPERIOR */
+    .top-bar {
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .top-bar a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    /* CONTENEDOR DE TARJETAS */
+    .cards-wrapper {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    .auth-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2.25rem 2rem;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--primary);
+      color: white;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+    }
+
+    .subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* FORMULARIOS E INPUTS */
+    .form-group {
+      margin-bottom: 1.1rem;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.4rem;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+
+    .input-box {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      outline: none;
+      background: var(--bg-subtle);
+      transition: border-color 0.2s;
+    }
+
+    .input-wrapper input {
+      padding-left: 2.5rem;
+    }
+
+    .input-box:focus {
+      border-color: var(--primary);
+      background: white;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    /* BOTONES */
+    .btn {
+      padding: 0.6rem 1.1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .divider {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin: 1.25rem 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .switch-link {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+    }
+
+    .switch-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .secure-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 1rem;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 480px) {
+      .auth-card {
+        padding: 1.75rem 1.25rem;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>

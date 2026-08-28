@@ -7,17 +7,204 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
   <style>
-    body { background: #64748b; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
-    .modal-card { background: white; border-radius: 16px; width: 100%; max-width: 540px; box-shadow: var(--shadow-xl); overflow: hidden; }
-    .modal-header { padding: 1.5rem 2rem 1rem 2rem; display: flex; justify-content: space-between; align-items: flex-start; }
-    .close-btn { background: none; border: none; font-size: 1.2rem; color: var(--text-light); cursor: pointer; }
-    .modal-body { padding: 0 2rem 1.5rem 2rem; }
-    .time-pills { display: flex; gap: 0.6rem; }
-    .time-pill { padding: 0.5rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-dark); background: white; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
-    .time-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
-    .modal-footer { background: var(--bg-subtle); padding: 1rem 2rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem; }
+    /* ==========================================================================
+       04 - REGISTRAR TURNO (MODAL) | MEDICORE HEALTH
+       CSS Específico y Autónomo de la Pantalla
+       ========================================================================== */
+    :root {
+      --primary: #004797;
+      --primary-hover: #003673;
+      --primary-light: #e0f2fe;
+      --bg-main: #64748b;
+      --bg-card: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-dark: #0f172a;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* MODAL CARD */
+    .modal-card {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 540px;
+      box-shadow: var(--shadow-xl);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 1.5rem 2rem 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--text-light);
+      cursor: pointer;
+    }
+
+    .close-btn:hover {
+      color: var(--text-dark);
+    }
+
+    .modal-body {
+      padding: 0 2rem 1.5rem 2rem;
+    }
+
+    .modal-footer {
+      background: var(--bg-subtle);
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    /* FORMULARIOS */
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.4rem;
+    }
+
+    .input-box {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      outline: none;
+      background: var(--bg-subtle);
+      transition: border-color 0.2s;
+    }
+
+    .input-box:focus {
+      border-color: var(--primary);
+      background: white;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    /* HORARIOS EN PÍLDORAS */
+    .time-pills {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .time-pill {
+      padding: 0.5rem 0.85rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-dark);
+      background: white;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .time-pill:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .time-pill.selected {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* BOTONES */
+    .btn {
+      padding: 0.6rem 1.1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--primary);
+      border: 1px solid var(--border-dark);
+    }
+
+    .btn-secondary:hover {
+      background: var(--primary-light);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 480px) {
+      .modal-card {
+        border-radius: 12px;
+      }
+      .modal-header, .modal-body, .modal-footer {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>

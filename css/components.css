@@ -475,10 +475,22 @@ td {
   justify-content: space-between;
   padding: 1.25rem 1rem;
   transform: translateX(-270px); /* Oculto completamente fuera de pantalla */
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 6px 0 25px rgba(0, 0, 0, 0.25);
   pointer-events: auto; /* Reactiva interacción */
   position: relative;
+}
+
+/* Zona activa en todo el borde izquierdo (100vh) para desplegar al acercar el cursor */
+.blue-sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -28px;
+  width: 28px;
+  height: 100vh;
+  background: transparent;
+  pointer-events: auto;
 }
 
 /* Despliegue al pasar el cursor (hover) o al tener la clase .expanded */
@@ -486,33 +498,6 @@ td {
 .blue-sidebar:hover,
 .blue-sidebar.expanded {
   transform: translateX(0) !important;
-}
-
-/* Manejador de pestaña visible en el margen izquierdo */
-.blue-sidebar-toggle-handle {
-  position: absolute;
-  right: -42px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #1d4ed8;
-  color: white;
-  width: 42px;
-  padding: 1.1rem 0.35rem;
-  border-radius: 0 12px 12px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.78rem;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.25);
-  gap: 0.3rem;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  letter-spacing: 1.5px;
-  user-select: none;
-  pointer-events: auto;
 }
 
 .blue-brand-header {

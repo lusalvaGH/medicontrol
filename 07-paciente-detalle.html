@@ -7,14 +7,218 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
   <style>
+    /* ==========================================================================
+       07 - FICHA DEL PACIENTE | MEDICORE HEALTH
+       CSS Específico y Autónomo de la Pantalla
+       ========================================================================== */
+    :root {
+      --primary: #004797;
+      --primary-hover: #003673;
+      --primary-light: #e0f2fe;
+      --bg-main: #f0f4f9;
+      --bg-card: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-dark: #0f172a;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --status-conf-bg: #dcfce7;
+      --status-conf-text: #15803d;
+      --status-att-bg: #e0f2fe;
+      --status-att-text: #0369a1;
+      --status-canc-bg: #fee2e2;
+      --status-canc-text: #b91c1c;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ESTRUCTURA GENERAL */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .search-input {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--radius-md);
+      width: 340px;
+      font-size: 0.82rem;
+    }
+
+    .search-input input {
+      border: none;
+      background: transparent;
+      outline: none;
+      width: 100%;
+      font-size: 0.82rem;
+      color: var(--text-main);
+    }
+
+    .page-padding {
+      padding: 2rem;
+      flex: 1;
+    }
+
+    /* TARJETAS & GRID ESPECÍFICO */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 1.25rem;
+    }
+
     .profile-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; margin-bottom: 1.5rem; }
     .bottom-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; }
     .patient-avatar-lg { width: 72px; height: 72px; border-radius: 12px; background: var(--primary-light); color: var(--primary); font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 1rem; border-top: 1px solid #f1f5f9; padding-top: 1rem; }
     .kpi-box { background: var(--bg-subtle); padding: 0.75rem; border-radius: 8px; text-align: center; }
     .medical-note { background: var(--bg-subtle); border-left: 3px solid var(--primary); padding: 0.75rem; border-radius: 6px; font-size: 0.78rem; color: var(--text-main); margin-bottom: 0.85rem; }
+
+    /* TABLA */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.72rem;
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 0.9rem 0.75rem;
+      border-bottom: 1px solid #f1f5f9;
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    .badge {
+      padding: 0.25rem 0.65rem;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      display: inline-block;
+    }
+
+    .badge-confirmado { background: var(--status-conf-bg); color: var(--status-conf-text); }
+    .badge-attended { background: var(--status-att-bg); color: var(--status-att-text); }
+    .badge-cancelado { background: var(--status-canc-bg); color: var(--status-canc-text); }
+
+    /* BOTONES */
+    .btn {
+      padding: 0.6rem 1.1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--primary);
+      border: 1px solid var(--border-dark);
+    }
+
+    .btn-secondary:hover {
+      background: var(--primary-light);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 992px) {
+      .profile-grid, .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+      .kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 767px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+      }
+      .search-input {
+        width: 100%;
+      }
+      .page-padding {
+        padding: 1rem 0.75rem;
+      }
+    }
   </style>
 </head>
 <body>
