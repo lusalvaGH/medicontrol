@@ -1,0 +1,142 @@
+/* ==========================================================================
+   MEDICORE HEALTH / MEDICONTROL - RESPONSIVE STYLES (TODOS LOS DISPOSITIVOS)
+   ========================================================================== */
+
+/* 1. DESKTOP & WIDESCREEN (≥1200px) */
+@media (min-width: 1200px) {
+  .wireframe-main-content {
+    width: 100vw;
+  }
+}
+
+/* 2. TABLET BREAKPOINT (768px a 1199px) */
+@media (max-width: 1199px) {
+  .schedule-grid,
+  .timeline-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .weekly-grid-container {
+    gap: 0.5rem;
+  }
+
+  .search-input {
+    width: 240px;
+  }
+
+  .page-padding {
+    padding: 1.25rem;
+  }
+
+  .blue-sidebar {
+    width: 260px;
+  }
+}
+
+/* 3. MOBILE LANDSCAPE & PHONES (≤767px) */
+@media (max-width: 767px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .app-container {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .page-padding {
+    padding: 1rem 0.75rem;
+  }
+
+  .grid-2, .grid-3, .grid-4, .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-bar-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .full-time-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .table-container {
+    padding: 0.75rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Sidebar Flotante Adaptativa para Celulares */
+  .blue-sidebar {
+    width: 82vw;
+    max-width: 280px;
+  }
+
+  .wireframe-top-bar {
+    padding: 0.5rem 1rem;
+    height: 52px;
+  }
+
+  .wireframe-empty-state {
+    padding: 1.25rem 1rem;
+  }
+
+  .empty-icon-circle {
+    width: 85px;
+    height: 85px;
+    font-size: 2.2rem;
+  }
+}
+
+/* 4. SMALL MOBILE PORTRAIT (≤480px) */
+@media (max-width: 480px) {
+  .btn {
+    width: 100%;
+  }
+
+  .full-time-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .turn-modal-card {
+    padding: 0;
+    margin: 0.35rem;
+  }
+
+  .turn-modal-header, .turn-modal-body, .turn-modal-footer {
+    padding: 0.85rem;
+  }
+
+  .month-grid-container {
+    gap: 0.2rem;
+  }
+
+  .month-day-card {
+    min-height: 75px;
+    padding: 0.25rem;
+  }
+
+  .wireframe-top-bar {
+    font-size: 0.8rem;
+  }
+}

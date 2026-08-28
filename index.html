@@ -2,303 +2,139 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MediCore Health - Índice de Pantallas del Sistema</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MediCore Health - Sistema de Turnos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body style="overflow: hidden; margin: 0; padding: 0; width: 100vw; height: 100vh;">
 
-  <!-- Header -->
-  <header class="index-header">
-    <div style="max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <div style="width: 38px; height: 38px; background: var(--primary); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem;">+</div>
+  <div class="wireframe-app-shell">
+    
+    <!-- BARRA FLOTANTE AZUL (SIDEBAR DESPLEGABLE ÚNICAMENTE AL PASAR EL CURSOR POR EL COSTADO IZQUIERDO) -->
+    <div class="blue-sidebar-container" id="sidebarContainer">
+      <aside class="blue-sidebar" id="blueSidebar">
+        
+        <!-- Solapa visual en el margen izquierdo para desplegar al pasar el cursor o hacer clic -->
+        <div class="blue-sidebar-toggle-handle" onclick="toggleSidebar(event)">
+          <span>☰</span> <span>MENÚ</span>
+        </div>
+
         <div>
-          <div style="font-size: 1.35rem; font-weight: 800; letter-spacing: -0.5px;">MediCore Health</div>
-          <div style="font-size: 0.78rem; color: #94a3b8;">Portal de Gestión Hospitalaria</div>
+          <!-- Header de Marca -->
+          <div class="blue-brand-header">
+            <div class="blue-brand-icon">📅</div>
+            <div>
+              <div class="blue-brand-title">Sistema de<br>Turnos</div>
+            </div>
+          </div>
+
+          <!-- Opciones del Menú Principal -->
+          <ul class="blue-nav-list">
+            <li class="blue-nav-item" onclick="openScreen('03-recepcion-dashboard.html', 'Inicio (Dashboard)', this)">
+              <span>🏠</span> <span>Inicio</span>
+            </li>
+            <li class="blue-nav-item" onclick="openScreen('10-gestion-turnos-timeline.html', 'Turnos (Gestión)', this)">
+              <span>📅</span> <span>Turnos</span>
+            </li>
+            <li class="blue-nav-item" onclick="openScreen('10a-turnos-semana.html', 'Vista Semanal de Turnos', this)">
+              <span>🗓️</span> <span>Vista Semanal</span>
+            </li>
+            <li class="blue-nav-item" onclick="openScreen('10b-turnos-mes.html', 'Vista Mensual de Turnos', this)">
+              <span>🗓️</span> <span>Vista Mensual</span>
+            </li>
+            <li class="blue-nav-item" onclick="openScreen('07-paciente-detalle.html', 'Ficha de Pacientes', this)">
+              <span>👤</span> <span>Pacientes</span>
+            </li>
+            <li class="blue-nav-item" onclick="openScreen('09-medico-dashboard.html', 'Panel de Médicos', this)">
+              <span>🩺</span> <span>Médicos</span>
+            </li>
+            <li class="blue-nav-item" onclick="openScreen('02-configuracion-usuarios.html', 'Configuración de Usuarios', this)">
+              <span>⚙️</span> <span>Configuración</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Footer del Menú Azul -->
+        <div>
+          <ul class="blue-nav-list" style="border-top: 1px solid rgba(255,255,255,0.15); padding-top: 0.5rem;">
+            <li class="blue-nav-item" onclick="openScreen('01-login-registro.html', 'Cerrar Sesión / Login', this)" style="color: #fca5a5;">
+              <span>🚪</span> <span>Cerrar sesión</span>
+            </li>
+          </ul>
+        </div>
+
+      </aside>
+    </div>
+
+    <!-- ÁREA CENTRAL DE TRABAJO (100% ANCHO Y ALTO SIN ESPACIOS EN BLANCO) -->
+    <main class="wireframe-main-content">
+      
+      <!-- Top Bar de la Aplicación -->
+      <div class="wireframe-top-bar">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <button class="btn btn-secondary" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" onclick="toggleSidebar(event)">☰ Menú</button>
+          <div style="font-weight: 800; font-size: 1rem; color: #0f172a;" id="topBarTitle">Bienvenido, Recepcionista</div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span id="activeScreenBadge" style="display:none; background:#e0f2fe; color:var(--primary); font-size:0.72rem; font-weight:800; padding:0.2rem 0.6rem; border-radius:12px;">PANTALLA ACTIVA</span>
+          <div style="width: 34px; height: 34px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; color: var(--primary); font-weight: bold;">👤</div>
         </div>
       </div>
-      <div style="background: rgba(255,255,255,0.1); color: #38bdf8; padding: 0.35rem 0.85rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.15);">Catálogo de 12 Pantallas Reales</div>
-    </div>
-  </header>
 
-  <!-- Hero Banner -->
-  <div class="index-hero">
-    <div style="max-width: 900px; margin: 0 auto;">
-      <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">Índice interactivo de Pantallas del Sistema</h1>
-      <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.5;">Explora cada una de las 12 pantallas maquetadas fielmente a partir del prototipo oficial de MediCore Health. Hacé clic en "Abrir Pantalla" para interactuar con la interfaz correspondiente.</p>
-    </div>
+      <!-- 1. VISTA INICIAL: ESTADO VACÍO (MENU OCULTO HASTA PASAR EL CURSOR) -->
+      <div class="wireframe-empty-state" id="emptyStateView">
+        <div class="empty-icon-circle">
+          📅
+        </div>
+        <h2 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-bottom: 0.4rem;">Selecciona una opción del menú</h2>
+        <p style="color: var(--text-muted); font-size: 0.92rem; max-width: 420px; line-height: 1.45;">Pasa el cursor por el margen izquierdo (o toca el botón ☰) para desplegar las pantallas del sistema.</p>
+        <button class="btn btn-primary" style="margin-top: 1.25rem; font-size: 0.85rem;" onclick="toggleSidebar(event)">👈 Desplegar Menú de Pantallas</button>
+      </div>
+
+      <!-- 2. VISTA EN VIVO COMPLETA SIN ESPACIOS EN BLANCO -->
+      <div id="screenIframeContainer" style="display: none; flex: 1; width: 100%; height: calc(100vh - 56px); margin: 0; padding: 0;">
+        <iframe id="mainScreenIframe" class="wireframe-iframe-frame" src="about:blank"></iframe>
+      </div>
+
+    </main>
+
   </div>
 
-  <!-- Main Grid -->
-  <main style="max-width: 1280px; margin: 2rem auto; padding: 0 1.5rem; width: 100%;">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
-      <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
-        Pantallas Maquetadas <span style="background: var(--primary); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 700;">12 Interfaces</span>
-      </h2>
-    </div>
+  <script>
+    function toggleSidebar(e) {
+      if (e) e.stopPropagation();
+      const sidebar = document.getElementById('blueSidebar');
+      sidebar.classList.toggle('expanded');
+    }
 
-    <div class="screens-grid">
+    function openScreen(fileUrl, screenTitle, navEl) {
+      // Resaltar elemento activo en el menú lateral
+      const navItems = document.querySelectorAll('.blue-nav-item');
+      navItems.forEach(item => item.classList.remove('active'));
+      if (navEl) navEl.classList.add('active');
 
-      <!-- PANTALLA 1 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 01</span>
-          <span class="screen-category">Autenticación</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Portal de Acceso y Registro</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Vista dual de Autenticación ("Crear Cuenta" y "Iniciar Sesión"). Tarjetas centradas con diseño sobrio y conexión cifrada.</p>
-          <ul class="card-features">
-            <li>Formulario de Registro (Nombre, DNI, Email, Password)</li>
-            <li>Formulario de Login con opción "¿Olvidó su contraseña?"</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">01-login-registro.html</span>
-            <a href="01-login-registro.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
+      // Actualizar título y badge de la barra superior
+      document.getElementById('topBarTitle').textContent = screenTitle;
+      const badge = document.getElementById('activeScreenBadge');
+      badge.style.display = 'inline-block';
+      badge.textContent = screenTitle;
 
-      <!-- PANTALLA 2 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 02</span>
-          <span class="screen-category">Configuración</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Configuración del Sistema & Usuarios</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Administración de seguridad de cuenta y gestión completa de usuarios (Médicos, Recepcionistas) con estados y acciones.</p>
-          <ul class="card-features">
-            <li>Actualización de contraseña de usuario activo</li>
-            <li>Tabla de Usuarios/Médicos con estado ACTIVO y acciones</li>
-            <li>Botón "+ Agregar Nuevo Usuario"</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">02-configuracion-usuarios.html</span>
-            <a href="02-configuracion-usuarios.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
+      // Ocultar pantalla de bienvenida y mostrar el visor en vivo a pantalla completa
+      document.getElementById('emptyStateView').style.display = 'none';
+      const container = document.getElementById('screenIframeContainer');
+      container.style.display = 'block';
 
-      <!-- PANTALLA 3 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 03</span>
-          <span class="screen-category">Recepción</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Panel de Recepción (Dashboard)</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Tablero de control principal para la recepción con métricas diarias y menú desplegable emergente de 3 acciones en el botón de 3 puntos (⋮).</p>
-          <ul class="card-features">
-            <li>Pantalla emergente con 3 acciones (Modificar, Ver Ficha, Cancelar)</li>
-            <li>Tarjetas de indicadores de turnos del día</li>
-            <li>Tabla de turnos diarios con avatars y estados</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">03-recepcion-dashboard.html</span>
-            <a href="03-recepcion-dashboard.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
+      // Cargar la pantalla sin espacios en blanco
+      document.getElementById('mainScreenIframe').src = fileUrl;
 
-      <!-- PANTALLA 4 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 04</span>
-          <span class="screen-category">Modal Turnos</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Modal: Registrar Nuevo Turno</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Ventana modal superpuesta para agendar citas médicas con selector de paciente, profesional, fecha, horario disponible y motivo.</p>
-          <ul class="card-features">
-            <li>Buscador interactivo de paciente</li>
-            <li>Selector de horario con pastillas (09:00, 09:30, 10:00)</li>
-            <li>Caja de texto para motivo de la consulta</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">04-registrar-turno-modal.html</span>
-            <a href="04-registrar-turno-modal.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
+      // Contraer el menú si está en móvil
+      document.getElementById('blueSidebar').classList.remove('expanded');
+    }
+  </script>
 
-      <!-- PANTALLA 5 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 05</span>
-          <span class="screen-category">Modificación</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Modificación de Turno & Calendario</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Interfaz avanzada con calendario 100% interactivo (navegación de meses, selección de días y franjas horarias en vivo).</p>
-          <ul class="card-features">
-            <li>Calendario dinámico con navegación de meses y días</li>
-            <li>Grilla de horarios disponibles según el día elegido</li>
-            <li>Guardado con confirmación personalizada</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">05-modificar-turno.html</span>
-            <a href="05-modificar-turno.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANTALLA 6 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 06</span>
-          <span class="screen-category">Modal Cancelación</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Modal: Cancelación de Turno</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Diálogo modal de advertencia para cancelar un turno agendado, registrando el motivo correspondiente y liberando el cupo.</p>
-          <ul class="card-features">
-            <li>Alerta visual con ícono de advertencia rojo</li>
-            <li>Desplegable de motivo de cancelación obligatorio</li>
-            <li>Comentarios adicionales opcionales</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">06-cancelar-turno-modal.html</span>
-            <a href="06-cancelar-turno-modal.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANTALLA 7 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 07</span>
-          <span class="screen-category">Ficha Paciente</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Ficha e Información del Paciente</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Expediente integral del paciente (Valentina Rossi), historial de turnos pasados, medicación actual y resumen de consulta.</p>
-          <ul class="card-features">
-            <li>Header de perfil con foto, DNI, teléfono y dirección</li>
-            <li>Tarjeta de Próximo Turno (CONFIRMADO) con acciones</li>
-            <li>Historial de turnos y widget de diagnóstico/medicación</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">07-paciente-detalle.html</span>
-            <a href="07-paciente-detalle.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANTALLA 8 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 08</span>
-          <span class="screen-category">Detalle Turno</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Detalle de Turno Médico</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Vista detallada de un turno específico (Mateo Fernandez - EN ESPERA), con el motivo de la consulta y notas internas previas.</p>
-          <ul class="card-features">
-            <li>Tarjeta destacada con motivo de consulta post-operatorio</li>
-            <li>Notas internas médicas anteriores</li>
-            <li>Ficha lateral del paciente y cobertura médica (OSDE 410)</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">08-turno-detalle.html</span>
-            <a href="08-turno-detalle.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANTALLA 9 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 09</span>
-          <span class="screen-category">Panel Médico</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Panel Médico (Doctor Dashboard)</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Tablero exclusivo del médico (Dr. Julian Rossi) para ver su próximo paciente inmediato, agenda semanal y nómina del día.</p>
-          <ul class="card-features">
-            <li>Hero Card "Próximo Paciente" con botón "Llamar Paciente"</li>
-            <li>Widget de Agenda Semanal</li>
-            <li>Nómina de pacientes del día con estados (Atendido, En Espera)</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">09-medico-dashboard.html</span>
-            <a href="09-medico-dashboard.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANTALLA 10 -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 10</span>
-          <span class="screen-category">Gestión Día</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Gestión de Turnos - Vista Diaria</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Timeline cronológico por hora del día. Incluye el filtro de estados (CONFIRMADO, PENDIENTE, EN CURSO).</p>
-          <ul class="card-features">
-            <li>Filtro interactivo: CONFIRMADO, PENDIENTE, EN CURSO</li>
-            <li>Timeline cronológico de la jornada</li>
-            <li>Navegación directa a vista Semanal y Mensual</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">10-gestion-turnos-timeline.html</span>
-            <a href="10-gestion-turnos-timeline.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANTALLA 10A: VISTA SEMANAL -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 10A</span>
-          <span class="screen-category">Gestión Semana</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Gestión de Turnos - Vista Semanal</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Pantalla dedicada para ver la agenda semanal por columnas de días (Lunes a Sábado), estadísticas y tabla de filtrado de estados.</p>
-          <ul class="card-features">
-            <li>Grilla de 6 columnas por día con tarjetas de turnos</li>
-            <li>Métricas de la semana (184 turnos en total)</li>
-            <li>Filtro interactivo de estados: CONFIRMADO, PENDIENTE, EN CURSO</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">10a-turnos-semana.html</span>
-            <a href="10a-turnos-semana.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- PANTALLA 10B: VISTA MENSUAL -->
-      <div class="screen-card">
-        <div class="card-banner">
-          <span class="screen-num">PANTALLA 10B</span>
-          <span class="screen-category">Gestión Mes</span>
-        </div>
-        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Gestión de Turnos - Vista Mensual</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem; flex: 1;">Pantalla dedicada para ver la distribución completa del mes (Octubre 2023) en formato de calendario con volumen de turnos por día.</p>
-          <ul class="card-features">
-            <li>Grilla de calendario de 35 casillas mensuales</li>
-            <li>Indicadores de volumen de turnos diarios</li>
-            <li>Filtro interactivo de estados: CONFIRMADO, PENDIENTE, EN CURSO</li>
-          </ul>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-            <span class="file-tag">10b-turnos-mes.html</span>
-            <a href="10b-turnos-mes.html" class="btn btn-primary" style="font-size:0.82rem;">Abrir Pantalla →</a>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </main>
-
-  <footer>
-    <p><strong>MediCore Health &copy; 2026</strong> • Sistema de Gestión y Control Hospitalario</p>
-  </footer>
 </body>
 </html>
