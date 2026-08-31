@@ -8,32 +8,60 @@ requireRole('paciente');
 
 $idUsuario = (int) $_SESSION['id_usuario'];
 
-// Obtener los datos del paciente asociado al usuario
-$sql = "
-    SELECT
-        u.nombre,
-        u.apellido,
-        u.email,
-        p.id_paciente,
-        p.telefono,
-        p.direccion,
-        p.fecha_nacimiento,
-        p.genero,
-        p.obra_social
-    FROM usuarios u
-    INNER JOIN pacientes p ON p.id_usuario = u.id_usuario
-    WHERE u.id_usuario = :id_usuario
-    LIMIT 1
-";
+try {
+    // Obtener los datos del paciente asociado al usuario autenticado.
+    $sqlPaciente = "
+        SELECT
+            u.nombre,
+            u.apellido,
+            u.email,
+            p.id_paciente,
+            p.telefono,
+            p.direccion,
+            p.obra_social
+        FROM usuarios u
+        INNER JOIN pacientes p ON p.id_usuario = u.id_usuario
+        WHERE u.id_usuario = :id_usuario
+        LIMIT 1
+    ";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute(['id_usuario' => $idUsuario]);
+    $stmtPaciente = $pdo->prepare($sqlPaciente);
+    $stmtPaciente->execute(['id_usuario' => $idUsuario]);
+    $paciente = $stmtPaciente->fetch();
 
-$paciente = $stmt->fetch();
+    if (!$paciente) {
+        die('No se encontró el perfil del paciente.');
+    }
 
-if (!$paciente) {
-    die('No se encontró el perfil del paciente.');
+    $sqlTurnos = "
+        SELECT
+            fecha,
+            hora,
+            medico_nombre,
+            medico_apellido,
+            medico_especialidad,
+            estado,
+            motivo_consulta
+        FROM vista_paciente_turnos
+        WHERE id_paciente = :id_paciente
+        ORDER BY fecha ASC, hora ASC
+    ";
+
+    $stmtTurnos = $pdo->prepare($sqlTurnos);
+    $stmtTurnos->execute(['id_paciente' => $paciente['id_paciente']]);
+    $turnos = $stmtTurnos->fetchAll();
+} catch (PDOException $e) {
+    http_response_code(500);
+    die('No se pudo cargar la información del paciente. Intentá nuevamente más tarde.');
 }
+
+$estadosTurno = [
+    'pendiente' => 'Pendiente',
+    'confirmado' => 'Confirmado',
+    'en_curso' => 'En curso',
+    'atendido' => 'Atendido',
+    'cancelado' => 'Cancelado',
+];
 ?>
 
 <!DOCTYPE html>
@@ -85,9 +113,33 @@ if (!$paciente) {
         <strong>Rol:</strong> Paciente
     </p>
 
-    <p>
-        Acá posteriormente aparecerán tus turnos.
-    </p>
+    <h3>Mis turnos</h3>
+
+    <?php if (count($turnos) === 0): ?>
+        <p>Actualmente no tenés turnos registrados.</p>
+    <?php else: ?>
+        <ul>
+            <?php foreach ($turnos as $turno): ?>
+                <li>
+                    <strong>
+                        <?= htmlspecialchars($turno['fecha'] . ' ' . $turno['hora'], ENT_QUOTES, 'UTF-8') ?>
+                    </strong>
+                    -
+                    Médico:
+                    <?= htmlspecialchars($turno['medico_nombre'] . ' ' . $turno['medico_apellido'], ENT_QUOTES, 'UTF-8') ?>
+                    (<?= htmlspecialchars($turno['medico_especialidad'], ENT_QUOTES, 'UTF-8') ?>)
+                    -
+                    Estado:
+                    <?= htmlspecialchars($estadosTurno[$turno['estado']] ?? $turno['estado'], ENT_QUOTES, 'UTF-8') ?>
+                    <?php if ($turno['motivo_consulta'] !== null && $turno['motivo_consulta'] !== ''): ?>
+                        -
+                        Motivo:
+                        <?= htmlspecialchars($turno['motivo_consulta'], ENT_QUOTES, 'UTF-8') ?>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
 
     <a href="../logout.php">Cerrar sesión</a>
 
