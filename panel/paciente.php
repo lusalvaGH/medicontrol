@@ -1,21 +1,10 @@
 ```php
 <?php
 
-session_start();
-
 require_once __DIR__ . '/../conexion.php';
+require_once __DIR__ . '/../includes/auth.php';
 
-// Verificar que haya una sesión iniciada
-if (!isset($_SESSION['id_usuario'], $_SESSION['rol'])) {
-    header('Location: ../login.php');
-    exit;
-}
-
-// Verificar que el usuario sea paciente
-if ($_SESSION['rol'] !== 'paciente') {
-    http_response_code(403);
-    die('Acceso denegado: esta página es exclusiva para pacientes.');
-}
+requireRole('paciente');
 
 $idUsuario = (int) $_SESSION['id_usuario'];
 
