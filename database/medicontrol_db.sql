@@ -155,22 +155,22 @@ JOIN usuarios um ON m.id_usuario = um.id_usuario;
 -- 4.1. Insertar Usuarios
 INSERT INTO usuarios (id_usuario, nombre, apellido, dni, email, contrasena, rol, estado) VALUES
 -- Recepcionistas
-(1, 'Elena', 'Martínez', '30111222', 'operador@medicore.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'recepcionista', 'activo'),
-(2, 'Lucas', 'Gómez', '31555666', 'recepcion2@medicore.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'recepcionista', 'activo'),
+(1, 'Elena', 'Martínez', '30111222', 'operador@medicore.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'recepcionista', 'activo'),
+(2, 'Lucas', 'Gómez', '31555666', 'recepcion2@medicore.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'recepcionista', 'activo'),
 
 -- Médicos
-(3, 'Alejandro', 'Rossi', '20111333', 'a.rossi@medicore.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'medico', 'activo'),
-(4, 'Maria', 'Garcia', '22444555', 'm.garcia@medicore.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'medico', 'activo'),
-(5, 'Julián', 'Martínez', '24777888', 'j.martinez@medicore.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'medico', 'activo'),
-(6, 'Carlos', 'Ruiz', '23111000', 'c.ruiz@medicore.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'medico', 'activo'),
+(3, 'Alejandro', 'Rossi', '20111333', 'a.rossi@medicore.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'medico', 'activo'),
+(4, 'Maria', 'Garcia', '22444555', 'm.garcia@medicore.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'medico', 'activo'),
+(5, 'Julián', 'Martínez', '24777888', 'j.martinez@medicore.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'medico', 'activo'),
+(6, 'Carlos', 'Ruiz', '23111000', 'c.ruiz@medicore.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'medico', 'activo'),
 
 -- Pacientes
-(7, 'Eduardo', 'Rodríguez', '34552121', 'e.rodriguez@mail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'paciente', 'activo'),
-(8, 'Valentina', 'Rossi', '34567890', 'v.rossi@mail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'paciente', 'activo'),
-(9, 'Mateo', 'Fernández', '38991204', 'm.fernandez@mail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'paciente', 'activo'),
-(10, 'Roberto', 'García', '24556788', 'r.garcia@mail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'paciente', 'activo'),
-(11, 'Ricardo', 'Alarcón', '32114556', 'r.alarcon@mail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'paciente', 'activo'),
-(12, 'Lucía', 'Méndez', '36778912', 'l.mendez@mail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'paciente', 'activo');
+(7, 'Eduardo', 'Rodríguez', '34552121', 'e.rodriguez@mail.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'paciente', 'activo'),
+(8, 'Valentina', 'Rossi', '34567890', 'v.rossi@mail.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'paciente', 'activo'),
+(9, 'Mateo', 'Fernández', '38991204', 'm.fernandez@mail.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'paciente', 'activo'),
+(10, 'Roberto', 'García', '24556788', 'r.garcia@mail.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'paciente', 'activo'),
+(11, 'Ricardo', 'Alarcón', '32114556', 'r.alarcon@mail.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'paciente', 'activo'),
+(12, 'Lucía', 'Méndez', '36778912', 'l.mendez@mail.com', '$2y$10$wsH02NHsGcDH97H9oPAfPuXUZEJOG7zRVb/uaEdgQmgP66xTPS05K', 'paciente', 'activo');
 
 -- 4.2. Insertar Médicos (Especialidad y Matrícula)
 INSERT INTO medicos (id_medico, id_usuario, especialidad, matricula) VALUES
