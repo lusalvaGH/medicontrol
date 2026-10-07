@@ -1,0 +1,928 @@
+<?php
+
+require_once __DIR__ . '/../includes/auth.php';
+
+requireRole('recepcionista');
+
+$nombreUsuario = trim((string) ($_SESSION['nombre'] ?? ''));
+$apellidoUsuario = trim((string) ($_SESSION['apellido'] ?? ''));
+$usuarioActual = trim($nombreUsuario . ' ' . $apellidoUsuario);
+$usuarioActual = $usuarioActual !== '' ? $usuarioActual : 'Recepción';
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCore Health - Gestión de Turnos (Semana)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================================================
+       10A - GESTIÓN DE TURNOS (SEMANA) | MEDICORE HEALTH
+       CSS Específico y Autónomo de la Pantalla
+       ========================================================================== */
+    :root {
+      --primary: #004797;
+      --primary-hover: #003673;
+      --primary-light: #e0f2fe;
+      --primary-subtle: #e8f1fd;
+      --bg-main: #f0f4f9;
+      --bg-card: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-dark: #0f172a;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --status-conf-bg: #dcfce7;
+      --status-conf-text: #15803d;
+      --status-pend-bg: #fef3c7;
+      --status-pend-text: #b45309;
+      --status-canc-bg: #fee2e2;
+      --status-canc-text: #b91c1c;
+      --status-att-bg: #e0f2fe;
+      --status-att-text: #0369a1;
+      --status-espera-bg: #ffedd5;
+      --status-espera-text: #c2410c;
+      --status-encurso-bg: #e0e7ff;
+      --status-encurso-text: #3730a3;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ESTRUCTURA GENERAL */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      position: relative;
+    }
+
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .search-input {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--radius-md);
+      width: 340px;
+      font-size: 0.82rem;
+    }
+
+    .search-input input {
+      border: none;
+      background: transparent;
+      outline: none;
+      width: 100%;
+      font-size: 0.82rem;
+      color: var(--text-main);
+    }
+
+    .page-padding {
+      padding: 2rem;
+      flex: 1;
+    }
+
+    /* GRID & CARDS */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      line-height: 1;
+      margin-top: 0.3rem;
+    }
+
+    /* VISTA SEMANAL */
+    .weekly-grid-container { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.85rem; overflow-x: auto; margin-bottom: 2rem; }
+    .week-col { background: white; border: 2px dashed transparent; border-radius: 12px; padding: 1rem 0.75rem; min-width: 180px; min-height: 480px; transition: all 0.2s; }
+    .week-col-header { text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 0.85rem; user-select: none; }
+    .week-col-header h3 { font-size: 0.95rem; font-weight: 800; color: #0f172a; }
+    .week-col-header p { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+    
+    .week-slot-card { background: var(--bg-subtle); border-left: 4px solid var(--primary); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; font-size: 0.8rem; cursor: grab; transition: all 0.2s; box-shadow: var(--shadow-sm); }
+    .week-slot-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .week-slot-card.conf { border-left-color: #15803d; background: #f0fdf4; }
+    .week-slot-card.pend { border-left-color: #b45309; background: #fffbeb; }
+    .week-slot-card.encurso { border-left-color: #3730a3; background: #f5f3ff; }
+    .week-slot-card.canc { border-left-color: #b91c1c; background: #fef2f2; }
+    .week-slot-card.selected-card-highlight {
+      border: 2px solid var(--primary) !important;
+      box-shadow: 0 0 15px rgba(0, 71, 151, 0.35) !important;
+      background: #f0f9ff !important;
+    }
+
+    .view-tabs { display: flex; background: var(--border-color); padding: 3px; border-radius: 8px; font-size: 0.78rem; }
+    .tab-btn { border: none; padding: 0.4rem 0.85rem; border-radius: 6px; font-weight: 700; cursor: pointer; background: transparent; color: var(--text-muted); text-decoration: none; display: inline-block; }
+    .tab-btn.active { background: white; color: var(--primary); box-shadow: var(--shadow-sm); }
+    .drag-hint { font-size: 0.75rem; color: var(--primary); font-weight: 700; background: var(--primary-light); padding: 0.4rem 0.8rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 0.4rem; }
+
+    /* BARRA DE FILTROS */
+    .filter-bar-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .spec-selector { display: flex; align-items: center; gap: 0.5rem; }
+    .spec-select-input { padding: 0.55rem 0.9rem; border-radius: 8px; border: 1px solid var(--border-dark); font-weight: 700; font-size: 0.85rem; background: var(--bg-subtle); color: var(--text-dark); cursor: pointer; outline: none; }
+
+    /* GRILLA DE HORARIOS */
+    .full-time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.5rem; max-height: 180px; overflow-y: auto; padding-right: 0.2rem; }
+    .time-slot-btn { background: var(--bg-subtle); border: 1px solid var(--border-color); padding: 0.45rem 0.25rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: var(--text-main); text-align: center; cursor: pointer; transition: all 0.15s; }
+    .time-slot-btn:hover { background: #e0f2fe; color: var(--primary); border-color: var(--primary); }
+    .time-slot-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 800; box-shadow: 0 2px 4px rgba(0,71,151,0.2); }
+
+    /* MODAL DE CLIENTES */
+    .client-list-modal { width: 100%; max-width: 600px; }
+    .client-item-card { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); }
+    .client-item-card:hover { background: var(--bg-subtle); }
+
+    /* DETALLE BREVE */
+    .detail-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; margin-bottom: 1rem; }
+    .detail-info-item { background: var(--bg-subtle); padding: 0.85rem; border-radius: 10px; border: 1px solid var(--border-color); }
+    .detail-info-item label { font-size: 0.68rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.25rem; }
+    .detail-info-item div { font-size: 0.88rem; font-weight: 700; color: var(--text-dark); }
+
+    /* BADGES */
+    .badge {
+      padding: 0.25rem 0.65rem;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      display: inline-block;
+    }
+    .badge-confirmado { background: var(--status-conf-bg); color: var(--status-conf-text); }
+    .badge-pendiente { background: var(--status-pend-bg); color: var(--status-pend-text); }
+    .badge-cancelado { background: var(--status-canc-bg); color: var(--status-canc-text); }
+    .badge-encurso { background: var(--status-encurso-bg); color: var(--status-encurso-text); }
+
+    /* BOTONES */
+    .btn {
+      padding: 0.6rem 1.1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--bg-card); color: var(--primary); border: 1px solid var(--border-dark); }
+    .btn-secondary:hover { background: var(--primary-light); }
+    .btn-danger { background: var(--status-canc-text); color: white; }
+    .btn-danger:hover { background: #991b1b; }
+
+    /* FORMULARIOS */
+    .form-group { margin-bottom: 1.1rem; }
+    .form-group label { display: block; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+    .input-box { width: 100%; padding: 0.7rem 0.9rem; border: 1px solid var(--border-dark); border-radius: var(--radius-md); font-size: 0.85rem; outline: none; background: var(--bg-subtle); transition: border-color 0.2s; }
+    .input-box:focus { border-color: var(--primary); background: white; }
+
+    /* POPUP & MODALES */
+    .menu-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 999; display: none; }
+    .menu-backdrop.show { display: block; }
+    .action-btn-trigger { width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; color: var(--text-muted); transition: all 0.2s; user-select: none; }
+    .action-btn-trigger:hover, .action-btn-trigger.active { background: var(--primary-light); color: var(--primary); }
+    .popup-menu { position: absolute; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-dark); box-shadow: var(--shadow-xl); width: 270px; z-index: 1000; display: none; overflow: hidden; animation: popIn 0.15s ease-out; }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(-5px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .popup-menu.show { display: block; }
+    .popup-header { background: var(--bg-subtle); padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); font-size: 0.75rem; font-weight: 800; color: var(--text-dark); display: flex; justify-content: space-between; align-items: center; }
+    .popup-actions-list { list-style: none; padding: 0.35rem 0; }
+    .popup-action-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 1rem; font-size: 0.83rem; font-weight: 600; color: var(--text-main); text-decoration: none; transition: background 0.15s; cursor: pointer; }
+    .popup-action-item:hover { background: #f0f9ff; color: var(--primary); }
+    .popup-action-item.danger { color: #dc2626; }
+    .popup-action-item.danger:hover { background: var(--status-canc-bg); color: var(--status-canc-text); }
+
+    .turn-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
+    .turn-modal-overlay.show { display: flex; }
+    .turn-modal-card { background: white; border-radius: 16px; width: 100%; max-width: 540px; box-shadow: var(--shadow-xl); overflow: hidden; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+    .turn-modal-header { padding: 1.25rem 1.5rem; background: var(--bg-subtle); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .turn-modal-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
+    .close-modal { font-size: 1.2rem; color: var(--text-light); cursor: pointer; font-weight: bold; }
+    .turn-modal-body { padding: 1.5rem; }
+    .turn-modal-footer { padding: 1rem 1.5rem; background: var(--bg-subtle); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; gap: 0.75rem; }
+
+    /* TOAST NOTIFICATION */
+    .toast-notification { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: #0f172a; color: white; padding: 0.85rem 1.5rem; border-radius: 30px; font-size: 0.88rem; font-weight: 700; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 3000; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 0.5rem; }
+    .toast-notification.show { transform: translateX(-50%) translateY(0); }
+
+    /* RESPONSIVE */
+    @media (max-width: 1199px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .weekly-grid-container { gap: 0.5rem; }
+    }
+    @media (max-width: 767px) {
+      header { flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; }
+      .search-input { width: 100%; }
+      .page-padding { padding: 1rem 0.75rem; }
+      .grid-4 { grid-template-columns: 1fr; }
+      .filter-bar-card { flex-direction: column; align-items: flex-start; }
+      .full-time-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .search-empty { display:none; padding:1rem; margin-top:1rem; border:1px dashed var(--border-dark); border-radius:8px; color:var(--text-muted); text-align:center; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Main Content Area -->
+    <div class="main-area">
+      <header>
+        <div class="search-input">
+          🔍 <input id="turnosSearch" type="search" placeholder="Buscar paciente o médico..." autocomplete="off">
+        </div>
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);"><?= htmlspecialchars($usuarioActual, ENT_QUOTES, 'UTF-8') ?> (RECEPCIÓN) · <a href="../logout.php" style="color:var(--primary); text-decoration:none;">Cerrar sesión</a></div>
+      </header>
+
+      <div class="page-padding">
+        
+        <!-- Stats de la Semana -->
+        <div class="grid-4" style="margin-bottom: 1.5rem;">
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Turnos de la Semana</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#0f172a; margin-top:0.2rem;">184 <span style="font-size:0.75rem; color:#166534;">+8%</span></div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Confirmados</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#166534; margin-top:0.2rem;">120</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Pendientes</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#b45309; margin-top:0.2rem;">42</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">En Curso</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#3730a3; margin-top:0.2rem;">22</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARRA DE FILTRADO DE ESPECIALIDAD & TODOS LOS CLIENTES -->
+        <div class="filter-bar-card">
+          <div class="spec-selector">
+            <span style="font-size:0.82rem; font-weight:800; color:#0f172a;">🩺 Especialidad:</span>
+            <select class="spec-select-input" id="specFilterSelect">
+              <option value="ALL">Todas las Especialidades</option>
+              <option value="Cardiología">Cardiología</option>
+              <option value="Pediatría">Pediatría</option>
+              <option value="Traumatología">Traumatología</option>
+              <option value="Clínica Médica">Clínica Médica</option>
+            </select>
+          </div>
+
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <button class="btn btn-secondary" onclick="openAllClientsModal()">👥 Todos los Clientes / Pacientes</button>
+            <div class="drag-hint">🤚 Tocá un turno para modificar o presioná "Detalle del Turno" para ver su ficha</div>
+          </div>
+        </div>
+
+        <!-- Controls / Switch Vistas -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
+          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <a href="04-registrar-turno-modal.html" class="btn btn-primary">⊕ Registrar Turno</a>
+            <!-- El botón de Detalle abre la ficha del turno que el usuario haya seleccionado -->
+            <button class="btn btn-secondary" onclick="openDetailModalFromTop()">📄 Detalle del Turno</button>
+            <span style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-left:0.5rem;">Semana del 23 al 28 de Octubre, 2023</span>
+          </div>
+
+          <div class="view-tabs">
+            <a href="recepcionista.php" class="tab-btn">Día</a>
+            <a href="recepcionista_semana.php" class="tab-btn active">Semana</a>
+            <a href="recepcionista_mes.php" class="tab-btn">Mes</a>
+          </div>
+        </div>
+
+        <!-- GRILLA SEMANAL -->
+        <div class="weekly-grid-container" id="weeklyGridContainer">
+
+          <!-- Lunes -->
+          <div class="week-col" data-day="Lunes 23 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Lunes 23 de Octubre')">
+            <div class="week-col-header">
+              <h3>Lunes 23</h3>
+              <p>Octubre</p>
+            </div>
+            
+            <div class="week-slot-card conf" id="turn-101" data-spec="Cardiología" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-101', 'Juan Pérez', 'Dr. Roberto Gómez', 'Cardiología', '08:30 AM', '2023-10-23', 'CONFIRMADO', 'OSDE 310', 'Chequeo semanal de rutina cardiológica.', '35.123.456', this)">
+              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Juan Pérez</div>
+              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dr. Roberto Gómez • Cardiología</div>
+              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+                <strong class="card-time">08:30 AM</strong>
+                <span class="badge badge-confirmado card-badge">CONFIRMADO</span>
+              </div>
+            </div>
+
+            <div class="week-slot-card encurso" id="turn-102" data-spec="Cardiología" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-102', 'Marta Gómez', 'Dra. Espinoza', 'Cardiología', '10:00 AM', '2023-10-23', 'EN CURSO', 'IAPOS', 'Control post-operatorio valvular en curso.', '12.333.444', this)">
+              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Marta Gómez</div>
+              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dra. Espinoza • Cardiología</div>
+              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+                <strong class="card-time">10:00 AM</strong>
+                <span class="badge badge-encurso card-badge">EN CURSO</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Martes -->
+          <div class="week-col" data-day="Martes 24 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Martes 24 de Octubre')">
+            <div class="week-col-header">
+              <h3>Martes 24</h3>
+              <p>Octubre</p>
+            </div>
+            
+            <div class="week-slot-card encurso" id="turn-103" data-spec="Traumatología" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-103', 'Roberto Silva', 'Dr. Martínez', 'Traumatología', '09:00 AM', '2023-10-24', 'EN CURSO', 'Particular', 'Evaluación por esguince de tobillo y kinesiología.', '34.111.999', this)">
+              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Roberto Silva</div>
+              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dr. Martínez • Traumatología</div>
+              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+                <strong class="card-time">09:00 AM</strong>
+                <span class="badge badge-encurso card-badge">EN CURSO</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Miércoles -->
+          <div class="week-col" data-day="Miércoles 25 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Miércoles 25 de Octubre')">
+            <div class="week-col-header">
+              <h3>Miércoles 25</h3>
+              <p>Octubre</p>
+            </div>
+            
+            <div class="week-slot-card conf" id="turn-104" data-spec="Pediatría" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-104', 'Ana Martinez', 'Dra. María Fernández', 'Pediatría', '11:00 AM', '2023-10-25', 'CONFIRMADO', 'Swiss Medical', 'Control pediátrico de desarrollo y vacunas.', '28.555.666', this)">
+              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Ana Martinez</div>
+              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dra. María Fernández • Pediatría</div>
+              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+                <strong class="card-time">11:00 AM</strong>
+                <span class="badge badge-confirmado card-badge">CONFIRMADO</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Jueves -->
+          <div class="week-col" data-day="Jueves 26 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Jueves 26 de Octubre')">
+            <div class="week-col-header">
+              <h3>Jueves 26</h3>
+              <p>Octubre</p>
+            </div>
+            
+            <div class="week-slot-card pend" id="turn-105" data-spec="Clínica Médica" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-105', 'Lucía Mendez', 'Médico asignado', 'Clínica Médica', '02:00 PM', '2023-10-26', 'PENDIENTE', 'Galeno', 'Consulta médica general de rutina.', '22.888.777', this)">
+              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Lucía Mendez</div>
+              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Médico asignado • Clínica Médica</div>
+              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+                <strong class="card-time">02:00 PM</strong>
+                <span class="badge badge-pendiente card-badge">PENDIENTE</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Viernes -->
+          <div class="week-col" data-day="Viernes 27 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Viernes 27 de Octubre')">
+            <div class="week-col-header">
+              <h3>Viernes 27</h3>
+              <p>Octubre</p>
+            </div>
+            
+            <div class="week-slot-card conf" id="turn-106" data-spec="Pediatría" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-106', 'Diego Torres', 'Dra. María Fernández', 'Pediatría', '04:30 PM', '2023-10-27', 'CONFIRMADO', 'OSDE 410', 'Control de rutina pediátrico trimestral.', '40.999.888', this)">
+              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Diego Torres</div>
+              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dra. María Fernández • Pediatría</div>
+              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+                <strong class="card-time">04:30 PM</strong>
+                <span class="badge badge-confirmado card-badge">CONFIRMADO</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sábado -->
+          <div class="week-col" data-day="Sábado 28 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Sábado 28 de Octubre')">
+            <div class="week-col-header">
+              <h3>Sábado 28</h3>
+              <p>Octubre</p>
+            </div>
+            
+            <div class="week-slot-card canc" id="turn-107" data-spec="Cardiología" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-107', 'Sofia Carranza', 'Dra. Espinoza', 'Cardiología', '09:30 AM', '2023-10-28', 'CANCELADO', 'Medifé', 'Turno cancelado por viaje del paciente.', '42.880.111', this)">
+              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Sofia Carranza</div>
+              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dra. Espinoza • Cardiología</div>
+              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+                <strong class="card-time">09:30 AM</strong>
+                <span class="badge badge-cancelado card-badge">CANCELADO</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. POP-UP MODAL EMERGENTE: MODIFICAR Y AJUSTAR TURNO (AL TOCAR UN TURNO) -->
+  <div class="turn-modal-overlay" id="turnEditModal">
+    <div class="turn-modal-card">
+      <div class="turn-modal-header" style="background: var(--bg-subtle);">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">✏️ Modificar & Ajustar Turno (Semana)</h3>
+        <span class="close-modal" onclick="closeEditModal()">✕</span>
+      </div>
+
+      <div class="turn-modal-body">
+        <form onsubmit="saveModalChanges(event)">
+          <input type="hidden" id="activeCardId">
+
+          <div class="form-group">
+            <label>Paciente</label>
+            <input type="text" id="modalPatientInput" class="input-box" required>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Médico Asignado</label>
+              <input type="text" id="modalDoctorInput" class="input-box" required>
+            </div>
+            <div class="form-group">
+              <label>Especialidad</label>
+              <input type="text" id="modalSpecInput" class="input-box" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>📆 Seleccionar Fecha</label>
+              <input type="date" id="modalDateInput" class="input-box" required style="font-weight:700; cursor:pointer;">
+            </div>
+            <div class="form-group">
+              <label>Horario Seleccionado</label>
+              <input type="text" id="modalTimeInput" class="input-box" required readonly style="background:#e0f2fe; color:var(--primary); font-weight:800;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Seleccionar Horario Disponible (Clic en la pastilla):</label>
+            <div class="full-time-grid" id="fullTimeGrid">
+              <div class="time-slot-btn" onclick="selectSlotTime('08:00 AM', this)">08:00 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('08:30 AM', this)">08:30 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('09:00 AM', this)">09:00 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('09:30 AM', this)">09:30 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('10:00 AM', this)">10:00 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('10:30 AM', this)">10:30 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('11:00 AM', this)">11:00 AM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('02:00 PM', this)">02:00 PM</div>
+              <div class="time-slot-btn" onclick="selectSlotTime('04:30 PM', this)">04:30 PM</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Estado del Turno</label>
+            <select id="modalStatusSelect" class="input-box" style="font-weight:700;">
+              <option value="CONFIRMADO">CONFIRMADO</option>
+              <option value="PENDIENTE">PENDIENTE</option>
+              <option value="EN CURSO">EN CURSO</option>
+              <option value="CANCELADO">CANCELADO</option>
+            </select>
+          </div>
+
+          <div class="turn-modal-footer" style="margin: 1.5rem -1.5rem -1.5rem -1.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="cancelTurnFromModal()" style="color:#ef4444;">❌ Cancelar Turno</button>
+            <button type="submit" class="btn btn-primary">✓ Guardar Modificaciones</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. POP-UP MODAL EMERGENTE: DETALLE DEL TURNO MEDICO (SOLO AL PRESIONAR DETALLE DEL TURNO) -->
+  <div class="turn-modal-overlay" id="turnDetailModal">
+    <div class="turn-modal-card" style="max-width: 520px;">
+      <div class="turn-modal-header" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white;">
+        <h3 style="color: white; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+          📄 Detalle del Turno Médico (Semana)
+        </h3>
+        <span class="close-modal" style="color: white;" onclick="closeDetailModal()">✕</span>
+      </div>
+
+      <div class="turn-modal-body" style="padding: 1.25rem;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1.25rem;">
+          <div>
+            <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Estado del Turno</div>
+            <div style="margin-top: 0.2rem;" id="detailStatusBadgeContainer">
+              <span class="badge badge-confirmado" id="detailStatusBadge">CONFIRMADO</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Horario Programado</div>
+            <div style="font-size: 1.05rem; font-weight: 800; color: var(--primary);" id="detailTimeText">08:30 AM</div>
+          </div>
+        </div>
+
+        <div class="detail-info-grid">
+          <div class="detail-info-item">
+            <label>👤 Paciente</label>
+            <div id="detailPatientText">Juan Pérez</div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;" id="detailCoverageText">OSDE 310 • DNI: 35.123.456</span>
+          </div>
+
+          <div class="detail-info-item">
+            <label>🩺 Médico Tratante</label>
+            <div id="detailDoctorText">Dr. Roberto Gómez</div>
+            <span style="font-size: 0.72rem; color: var(--primary); font-weight: 700;" id="detailSpecText">Cardiología</span>
+          </div>
+
+          <div class="detail-info-item">
+            <label>📅 Día / Fecha</label>
+            <div id="detailDateText">Lunes 23 de Octubre</div>
+          </div>
+
+          <div class="detail-info-item">
+            <label>🏥 Consultorio</label>
+            <div>Consultorio 2 • Piso 1</div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-subtle); border-left: 4px solid var(--primary); padding: 0.85rem; border-radius: 8px; margin-bottom: 1rem;">
+          <div style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">📝 Motivo de Consulta & Notas</div>
+          <p style="font-size: 0.82rem; color: var(--text-dark); margin: 0; line-height: 1.45;" id="detailReasonText">Control semanal de evolución y medicación.</p>
+        </div>
+
+      </div>
+
+      <div class="turn-modal-footer" style="padding: 0.85rem 1.25rem;">
+        <button type="button" class="btn btn-secondary" onclick="showToast('🖨️ Imprimiendo comprobante de turno...')">🖨️ Imprimir</button>
+        <button type="button" class="btn btn-primary" onclick="closeDetailModal()">Aceptar y Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE LISTADO COMPLETO DE CLIENTES / PACIENTES -->
+  <div class="turn-modal-overlay" id="allClientsModal">
+    <div class="turn-modal-card client-list-modal">
+      <div class="turn-modal-header">
+        <h3>👥 Todos los Clientes / Pacientes Registrados</h3>
+        <span class="close-modal" onclick="closeAllClientsModal()">✕</span>
+      </div>
+      <div class="turn-modal-body" style="padding:0; max-height:400px; overflow-y:auto;">
+        
+        <div class="client-item-card">
+          <div>
+            <strong style="color:#0f172a;">Juan Pérez</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 35.123.456)</span>
+            <div style="font-size:0.75rem; color:var(--text-muted);">OSDE 310 • Tel: +54 11 4567-8901</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); handleWeeklyCardClick('turn-101', 'Juan Pérez', 'Dr. Roberto Gómez', 'Cardiología', '08:30 AM', '2023-10-23', 'CONFIRMADO', 'OSDE 310', 'Chequeo semanal.', '35.123.456', null)">Seleccionar</button>
+        </div>
+
+        <div class="client-item-card">
+          <div>
+            <strong style="color:#0f172a;">Roberto Silva</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 34.111.999)</span>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Particular • Tel: +54 11 2233-4455</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); handleWeeklyCardClick('turn-103', 'Roberto Silva', 'Dr. Martínez', 'Traumatología', '09:00 AM', '2023-10-24', 'EN CURSO', 'Particular', 'Evaluación por esguince.', '34.111.999', null)">Seleccionar</button>
+        </div>
+
+        <div class="client-item-card">
+          <div>
+            <strong style="color:#0f172a;">Marta Gómez</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 12.333.444)</span>
+            <div style="font-size:0.75rem; color:var(--text-muted);">IAPOS • Tel: +54 11 9876-5432</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); handleWeeklyCardClick('turn-102', 'Marta Gómez', 'Dra. Espinoza', 'Cardiología', '10:00 AM', '2023-10-23', 'EN CURSO', 'IAPOS', 'Control semanal.', '12.333.444', null)">Seleccionar</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN TOAST -->
+  <div class="toast-notification" id="toastNotif">
+    <span id="toastMessage"></span>
+  </div>
+
+  <script>
+    // ESTADO DEL TURNO SELECCIONADO ACTIVO EN LA SEMANA
+    let activeSelectedAppointment = {
+      cardId: 'turn-101',
+      patient: 'Juan Pérez',
+      doctor: 'Dr. Roberto Gómez',
+      spec: 'Cardiología',
+      time: '08:30 AM',
+      dateStr: '2023-10-23',
+      status: 'CONFIRMADO',
+      coverage: 'OSDE 310',
+      reason: 'Chequeo semanal de rutina cardiológica.',
+      dni: '35.123.456'
+    };
+
+    // CERRAR MODALES AL HACER CLIC EN CUALQUIER LUGAR FUERA DEL MODAL
+    document.querySelectorAll('.turn-modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('show');
+        }
+      });
+    });
+
+    const specFilterSelect = document.getElementById('specFilterSelect');
+    if (specFilterSelect) {
+      specFilterSelect.addEventListener('change', (e) => {
+        const selectedSpec = e.target.value;
+        const cards = document.querySelectorAll('.week-slot-card');
+
+        cards.forEach(card => {
+          const cardSpec = card.getAttribute('data-spec');
+          if (selectedSpec === 'ALL' || cardSpec === selectedSpec) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+        showToast(`🩺 Filtrando por especialidad: ${selectedSpec === 'ALL' ? 'Todas' : selectedSpec}`);
+      });
+    }
+
+    function openAllClientsModal() {
+      document.getElementById('allClientsModal').classList.add('show');
+    }
+    function closeAllClientsModal() {
+      document.getElementById('allClientsModal').classList.remove('show');
+    }
+
+    // AL TOCAR UN TURNO EN LA GRILLA SEMANAL: RESALTAR SELECCIÓN Y ABRIR MODAL DE MODIFICACIÓN
+    function handleWeeklyCardClick(cardId, patient, doctor, spec, time, dateStr, status, coverage, reason, dni, cardEl) {
+      document.querySelectorAll('.week-slot-card').forEach(c => c.classList.remove('selected-card-highlight'));
+      if (cardEl) cardEl.classList.add('selected-card-highlight');
+
+      // Actualizar estado del turno seleccionado
+      activeSelectedAppointment = { cardId, patient, doctor, spec, time, dateStr, status, coverage, reason, dni };
+
+      // Abrir modal de Modificación/Ajustes
+      openEditModal(cardId, patient, doctor, spec, time, dateStr, status);
+    }
+
+    function openEditModal(cardId, patient, doctor, spec, time, dateStr, status) {
+      document.getElementById('activeCardId').value = cardId;
+      document.getElementById('modalPatientInput').value = patient;
+      document.getElementById('modalDoctorInput').value = doctor;
+      document.getElementById('modalSpecInput').value = spec;
+      document.getElementById('modalTimeInput').value = time;
+      document.getElementById('modalDateInput').value = dateStr || "2023-10-23";
+      document.getElementById('modalStatusSelect').value = status;
+
+      document.querySelectorAll('.time-slot-btn').forEach(b => {
+        if (b.textContent.trim() === time) {
+          b.classList.add('selected');
+        } else {
+          b.classList.remove('selected');
+        }
+      });
+
+      document.getElementById('turnEditModal').classList.add('show');
+    }
+
+    function closeEditModal() {
+      document.getElementById('turnEditModal').classList.remove('show');
+    }
+
+    function selectSlotTime(timeStr, btnEl) {
+      document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+      btnEl.classList.add('selected');
+      document.getElementById('modalTimeInput').value = timeStr;
+    }
+
+    // GUARDAR CAMBIOS REALES DE MODIFICACIÓN EN LA SEMANA
+    function saveModalChanges(e) {
+      e.preventDefault();
+      const cardId = document.getElementById('activeCardId').value;
+      const patient = document.getElementById('modalPatientInput').value;
+      const doctor = document.getElementById('modalDoctorInput').value;
+      const spec = document.getElementById('modalSpecInput').value;
+      const time = document.getElementById('modalTimeInput').value;
+      const dateVal = document.getElementById('modalDateInput').value;
+      const status = document.getElementById('modalStatusSelect').value;
+
+      const cardEl = document.getElementById(cardId);
+      if (cardEl) {
+        const nameEl = cardEl.querySelector('.card-patient-name');
+        const docEl = cardEl.querySelector('.card-doc-info');
+        const timeEl = cardEl.querySelector('.card-time');
+        const badgeEl = cardEl.querySelector('.card-badge');
+
+        if (nameEl) nameEl.textContent = patient;
+        if (docEl) docEl.textContent = `${doctor} • ${spec}`;
+        if (timeEl) timeEl.textContent = time;
+
+        cardEl.setAttribute('data-spec', spec);
+        cardEl.classList.remove('conf', 'pend', 'encurso', 'canc');
+
+        if (badgeEl) {
+          badgeEl.classList.remove('badge-confirmado', 'badge-pendiente', 'badge-encurso', 'badge-cancelado');
+
+          if (status === 'CONFIRMADO') {
+            cardEl.classList.add('conf');
+            badgeEl.classList.add('badge-confirmado');
+            badgeEl.textContent = 'CONFIRMADO';
+          } else if (status === 'PENDIENTE') {
+            cardEl.classList.add('pend');
+            badgeEl.classList.add('badge-pendiente');
+            badgeEl.textContent = 'PENDIENTE';
+          } else if (status === 'EN CURSO') {
+            cardEl.classList.add('encurso');
+            badgeEl.classList.add('badge-encurso');
+            badgeEl.textContent = 'EN CURSO';
+          } else if (status === 'CANCELADO') {
+            cardEl.classList.add('canc');
+            badgeEl.classList.add('badge-cancelado');
+            badgeEl.textContent = 'CANCELADO';
+          }
+        }
+      }
+
+      // Actualizar estado global
+      activeSelectedAppointment.patient = patient;
+      activeSelectedAppointment.doctor = doctor;
+      activeSelectedAppointment.spec = spec;
+      activeSelectedAppointment.time = time;
+      activeSelectedAppointment.dateStr = dateVal;
+      activeSelectedAppointment.status = status;
+
+      closeEditModal();
+      showToast(`✅ Cambios aplicados correctamente a ${patient} (${time} - Fecha: ${dateVal})`);
+    }
+
+    function cancelTurnFromModal() {
+      if (confirm("¿Confirmar cancelación de este turno?")) {
+        document.getElementById('modalStatusSelect').value = 'CANCELADO';
+        saveModalChanges(new Event('submit'));
+      }
+    }
+
+    // ABRIR EL MODAL DE DETALLE ÚNICAMENTE AL HACER CLIC EN "DETALLE DEL TURNO"
+    function openDetailModalFromTop() {
+      const { patient, doctor, spec, time, dateStr, status, coverage, reason, dni } = activeSelectedAppointment;
+      openDetailModal(patient, doctor, spec, time, dateStr, status, coverage, reason, dni);
+    }
+
+    function openDetailModal(patient, doctor, spec, time, dateStr, status, coverage, reason, dni) {
+      document.getElementById('detailPatientText').textContent = patient;
+      document.getElementById('detailDoctorText').textContent = doctor;
+      document.getElementById('detailSpecText').textContent = spec;
+      document.getElementById('detailTimeText').textContent = time;
+      document.getElementById('detailDateText').textContent = dateStr || "Semana Actual";
+      document.getElementById('detailCoverageText').textContent = `${coverage || 'OSDE 310'} • DNI: ${dni || '35.123.456'}`;
+      document.getElementById('detailReasonText').textContent = reason || "Consulta médica programada en la agenda semanal.";
+
+      const badge = document.getElementById('detailStatusBadge');
+      badge.className = 'badge';
+      if (status === 'CONFIRMADO') badge.classList.add('badge-confirmado');
+      else if (status === 'PENDIENTE') badge.classList.add('badge-pendiente');
+      else if (status === 'EN CURSO') badge.classList.add('badge-encurso');
+      else if (status === 'CANCELADO') badge.classList.add('badge-cancelado');
+      badge.textContent = status;
+
+      document.getElementById('turnDetailModal').classList.add('show');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('turnDetailModal').classList.remove('show');
+    }
+
+    function handleDragStart(e) {
+      e.dataTransfer.setData('text/plain', e.target.id);
+      e.target.style.opacity = '0.5';
+    }
+
+    function allowDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(e, targetDay) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      const cardId = e.dataTransfer.getData('text/plain');
+      const cardEl = document.getElementById(cardId);
+      
+      if (cardEl) {
+        cardEl.style.opacity = '1';
+        e.currentTarget.appendChild(cardEl);
+        showToast(`↔️ Turno movido con éxito a ${targetDay}`);
+      }
+    }
+
+    document.addEventListener('dragend', (e) => {
+      if (e.target && e.target.style) {
+        e.target.style.opacity = '1';
+      }
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotif');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  </script>
+  <script>
+    const turnosSearch = document.getElementById('turnosSearch');
+    const turnosSemana = Array.from(document.querySelectorAll('.week-slot-card'));
+    const agendaSemana = document.getElementById('weeklyGridContainer');
+
+    function normalizeSearchValue(value) {
+      return value.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    if (turnosSearch && agendaSemana && turnosSemana.length > 0) {
+      const searchEmpty = document.createElement('div');
+      searchEmpty.className = 'search-empty';
+      searchEmpty.textContent = 'No se encontraron turnos';
+      agendaSemana.parentElement.insertBefore(searchEmpty, agendaSemana.nextSibling);
+
+      turnosSearch.addEventListener('input', function () {
+        const term = normalizeSearchValue(this.value.trim());
+        let visibleCount = 0;
+
+        turnosSemana.forEach(function (turno) {
+          const searchableText = turno.textContent + ' ' + (turno.getAttribute('onclick') || '');
+          const matches = term === '' || normalizeSearchValue(searchableText).includes(term);
+          turno.style.display = matches ? '' : 'none';
+          if (matches) {
+            visibleCount++;
+          }
+        });
+
+        searchEmpty.style.display = visibleCount > 0 ? 'none' : 'block';
+      });
+    }
+  </script>
+</body>
+</html>
