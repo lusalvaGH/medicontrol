@@ -1,12 +1,11 @@
 -- ============================================================================
 -- PROYECTO: MEDICONTROL - SISTEMA DE GESTIÓN HOSPITALARIA Y TURNOS
--- MOTOR: MySQL 8.0+ / MariaDB (InnoDB, UTF-8 Multibyte)
--- ARCHIVO: database/medicontrol_db.sql
+-- MOTOR: MySQL 8.0+ / MariaDB 10.4+ (Compatible con XAMPP / WAMP / Docker)
+-- ARCHIVO: database/medicontrol.sql
 -- ============================================================================
 
 -- 1. CREACIÓN Y SELECCIÓN DE LA BASE DE DATOS
-DROP DATABASE IF EXISTS medicontrol_db;
-CREATE DATABASE medicontrol_db
+CREATE DATABASE IF NOT EXISTS medicontrol_db
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
@@ -16,21 +15,22 @@ USE medicontrol_db;
 -- 2. TABLAS PRINCIPALES
 -- ============================================================================
 
--- 2.1. TABLA USUARIOS (Centraliza autenticación y roles)
-CREATE TABLE usuarios (
+-- 2.1. TABLA USUARIOS (Centraliza autenticación y control de accesos RBAC)
+CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(80) NOT NULL,
     apellido VARCHAR(80) NOT NULL,
     dni VARCHAR(20) NOT NULL UNIQUE,
     email VARCHAR(120) NOT NULL UNIQUE,
-    contrasena VARCHAR(255) NOT NULL, -- Hashes Bcrypt / Argon2
+    contrasena VARCHAR(255) NOT NULL,
     rol ENUM('recepcionista', 'medico', 'paciente') NOT NULL,
     estado ENUM('activo', 'inactivo') NOT NULL DEFAULT 'activo',
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_usuarios_rol (rol, estado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2.2. TABLA PACIENTES (Extensión de perfil de paciente)
-CREATE TABLE pacientes (
+-- 2.2. TABLA PACIENTES (Extensión de perfil para pacientes)
+CREATE TABLE IF NOT EXISTS pacientes (
     id_paciente INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL UNIQUE,
     telefono VARCHAR(30) NULL,
@@ -41,10 +41,10 @@ CREATE TABLE pacientes (
     CONSTRAINT fk_pacientes_usuario 
         FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) 
         ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2.3. TABLA MEDICOS (Extensión de perfil de médico)
-CREATE TABLE medicos (
+-- 2.3. TABLA MEDICOS (Extensión de perfil para profesionales médicos)
+CREATE TABLE IF NOT EXISTS medicos (
     id_medico INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL UNIQUE,
     especialidad VARCHAR(100) NOT NULL,
@@ -52,10 +52,10 @@ CREATE TABLE medicos (
     CONSTRAINT fk_medicos_usuario 
         FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) 
         ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2.4. TABLA TURNOS (Gestión de citas médicas)
-CREATE TABLE turnos (
+-- 2.4. TABLA TURNOS (Gestión de citas médicas y estados)
+CREATE TABLE IF NOT EXISTS turnos (
     id_turno INT AUTO_INCREMENT PRIMARY KEY,
     id_paciente INT NOT NULL,
     id_medico INT NOT NULL,
@@ -71,18 +71,14 @@ CREATE TABLE turnos (
     CONSTRAINT fk_turnos_medico 
         FOREIGN KEY (id_medico) REFERENCES medicos(id_medico) 
         ON DELETE RESTRICT ON UPDATE CASCADE,
-    -- Evitar solapamiento de turno exacto para el mismo médico
-    UNIQUE KEY uk_medico_fecha_hora (id_medico, fecha, hora)
-) ENGINE=InnoDB;
-
--- Índices estratégicos para alto rendimiento en filtros de sesión y agenda
-CREATE INDEX idx_turnos_fecha ON turnos(fecha);
-CREATE INDEX idx_turnos_paciente_fecha ON turnos(id_paciente, fecha);
-CREATE INDEX idx_turnos_medico_fecha ON turnos(id_medico, fecha);
-CREATE INDEX idx_usuarios_rol ON usuarios(rol, estado);
+    UNIQUE KEY uk_medico_fecha_hora (id_medico, fecha, hora),
+    INDEX idx_turnos_fecha (fecha),
+    INDEX idx_turnos_paciente_fecha (id_paciente, fecha),
+    INDEX idx_turnos_medico_fecha (id_medico, fecha)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- 3. VISTAS DE SEGURIDAD (SECURITY VIEWS - CONTROL DE ACCESO)
+-- 3. VISTAS DE SEGURIDAD (SECURITY VIEWS - CONTROL DE ACCESO RBAC)
 -- ============================================================================
 
 -- 3.1. Vista para Recepción: Visión consolidada de toda la agenda hospitalaria
@@ -149,7 +145,7 @@ JOIN usuarios um ON m.id_usuario = um.id_usuario;
 
 -- ============================================================================
 -- 4. POBLACIÓN DE DATOS DE PRUEBA (SEED DATA REALISTA)
--- Passwords por defecto: '123456' (Hash generado con password_hash de PHP / Bcrypt)
+-- Contraseña unificada para usuarios de prueba: '123456'
 -- ============================================================================
 
 -- 4.1. Insertar Usuarios
@@ -171,13 +167,15 @@ INSERT INTO usuarios (id_usuario, nombre, apellido, dni, email, contrasena, rol,
 (10, 'Roberto', 'García', '24556788', 'r.garcia@mail.com', '$2y$10$ND4hx0JaZNegxul76e3D2uYsf.b8aDbVHo3Hmv2cpW6ki54xjZEoG', 'paciente', 'activo'),
 (11, 'Ricardo', 'Alarcón', '32114556', 'r.alarcon@mail.com', '$2y$10$ND4hx0JaZNegxul76e3D2uYsf.b8aDbVHo3Hmv2cpW6ki54xjZEoG', 'paciente', 'activo'),
 (12, 'Lucía', 'Méndez', '36778912', 'l.mendez@mail.com', '$2y$10$ND4hx0JaZNegxul76e3D2uYsf.b8aDbVHo3Hmv2cpW6ki54xjZEoG', 'paciente', 'activo')
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), apellido=VALUES(apellido);
 
 -- 4.2. Insertar Médicos (Especialidad y Matrícula)
 INSERT INTO medicos (id_medico, id_usuario, especialidad, matricula) VALUES
 (1, 3, 'Cardiología', 'MN-45892'),
 (2, 4, 'Cardiología', 'MN-38104'),
 (3, 5, 'Pediatría', 'MN-51209'),
-(4, 6, 'Traumatología', 'MN-44910');
+(4, 6, 'Traumatología', 'MN-44910')
+ON DUPLICATE KEY UPDATE especialidad=VALUES(especialidad), matricula=VALUES(matricula);
 
 -- 4.3. Insertar Pacientes (Datos complementarios)
 INSERT INTO pacientes (id_paciente, id_usuario, telefono, direccion, fecha_nacimiento, genero, obra_social) VALUES
@@ -186,11 +184,12 @@ INSERT INTO pacientes (id_paciente, id_usuario, telefono, direccion, fecha_nacim
 (3, 9, '+54 11 9988-1122', 'Corrientes 3450, CABA', '2001-11-03', 'Masculino', 'Galeno Silver'),
 (4, 10, '+54 11 3344-5566', 'Belgrano 890, CABA', '1975-08-19', 'Masculino', 'Particular'),
 (5, 11, '+54 11 2233-4455', 'Cabildo 1500, CABA', '1985-02-14', 'Masculino', 'Medifé'),
-(6, 12, '+54 11 7788-9900', 'Callao 670, CABA', '1995-09-30', 'Femenino', 'OSDE 310');
+(6, 12, '+54 11 7788-9900', 'Callao 670, CABA', '1995-09-30', 'Femenino', 'OSDE 310')
+ON DUPLICATE KEY UPDATE telefono=VALUES(telefono), obra_social=VALUES(obra_social);
 
--- 4.4. Insertar Turnos Médicos (Coincidentes con las maquetas visuales)
+-- 4.4. Insertar Turnos Médicos (Citas de prueba para hoy y próximos días)
 INSERT INTO turnos (id_turno, id_paciente, id_medico, fecha, hora, estado, motivo_consulta, notas_medicas) VALUES
--- Turnos para Dr. Alejandro Rossi / Dra. Maria Garcia (Cardiología)
+-- Turnos para hoy
 (1, 1, 2, CURDATE(), '09:00:00', 'confirmado', 'Control cardiológico anual', 'Paciente asintomático.'),
 (2, 2, 1, CURDATE(), '09:30:00', 'confirmado', 'Consulta de Seguimiento Post-Quirúrgico', 'Evolución favorable tras cirugía valvular.'),
 (3, 3, 1, CURDATE(), '10:30:00', 'en_curso', 'Control post-operatorio y ECG', 'Ligera molestia al esfuerzo leve.'),
@@ -198,8 +197,9 @@ INSERT INTO turnos (id_turno, id_paciente, id_medico, fecha, hora, estado, motiv
 (5, 5, 3, CURDATE(), '11:30:00', 'pendiente', 'Consulta pediátrica general', 'Primera consulta.'),
 (6, 6, 4, CURDATE(), '12:00:00', 'confirmado', 'Dolor articular en rodilla derecha', 'Requiere radiografía previa.'),
 
--- Turnos adicionales para próximos días
+-- Turnos para próximos días
 (7, 2, 1, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '09:00:00', 'confirmado', 'Revisión de estudios', NULL),
 (8, 1, 3, DATE_ADD(CURDATE(), INTERVAL 2 DAY), '10:00:00', 'pendiente', 'Control general', NULL),
 (9, 3, 4, DATE_ADD(CURDATE(), INTERVAL 3 DAY), '14:30:00', 'confirmado', 'Seguimiento traumatológico', NULL),
-(10, 5, 1, DATE_ADD(CURDATE(), INTERVAL 5 DAY), '16:00:00', 'confirmado', 'Consulta cardiológica', NULL);
+(10, 5, 1, DATE_ADD(CURDATE(), INTERVAL 5 DAY), '16:00:00', 'confirmado', 'Consulta cardiológica', NULL)
+ON DUPLICATE KEY UPDATE estado=VALUES(estado), motivo_consulta=VALUES(motivo_consulta);
