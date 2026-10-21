@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS pacientes (
     fecha_nacimiento DATE NULL,
     genero ENUM('Femenino', 'Masculino', 'Otro') NULL,
     obra_social VARCHAR(100) NULL DEFAULT 'Particular',
-    CONSTRAINT fk_pacientes_usuario 
-        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) 
+    CONSTRAINT fk_pacientes_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS medicos (
     id_usuario INT NOT NULL UNIQUE,
     especialidad VARCHAR(100) NOT NULL,
     matricula VARCHAR(50) NULL,
-    CONSTRAINT fk_medicos_usuario 
-        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) 
+    CONSTRAINT fk_medicos_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -65,11 +65,11 @@ CREATE TABLE IF NOT EXISTS turnos (
     motivo_consulta VARCHAR(255) NULL,
     notas_medicas TEXT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_turnos_paciente 
-        FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) 
+    CONSTRAINT fk_turnos_paciente
+        FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente)
         ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT fk_turnos_medico 
-        FOREIGN KEY (id_medico) REFERENCES medicos(id_medico) 
+    CONSTRAINT fk_turnos_medico
+        FOREIGN KEY (id_medico) REFERENCES medicos(id_medico)
         ON DELETE RESTRICT ON UPDATE CASCADE,
     UNIQUE KEY uk_medico_fecha_hora (id_medico, fecha, hora),
     INDEX idx_turnos_fecha (fecha),
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS turnos (
 
 -- 3.1. Vista para Recepción: Visión consolidada de toda la agenda hospitalaria
 CREATE OR REPLACE VIEW vista_recepcion_turnos AS
-SELECT 
+SELECT
     t.id_turno,
     t.fecha,
     t.hora,
@@ -109,7 +109,7 @@ JOIN usuarios um ON m.id_usuario = um.id_usuario;
 
 -- 3.2. Vista para Médico: Su propia agenda con datos básicos de pacientes asignados
 CREATE OR REPLACE VIEW vista_medico_agenda AS
-SELECT 
+SELECT
     t.id_turno,
     t.id_medico,
     t.fecha,
@@ -129,7 +129,7 @@ JOIN usuarios up ON p.id_usuario = up.id_usuario;
 
 -- 3.3. Vista para Paciente: Consulta segura y restringida de sus propios turnos
 CREATE OR REPLACE VIEW vista_paciente_turnos AS
-SELECT 
+SELECT
     t.id_turno,
     t.id_paciente,
     t.fecha,
@@ -144,11 +144,13 @@ JOIN medicos m ON t.id_medico = m.id_medico
 JOIN usuarios um ON m.id_usuario = um.id_usuario;
 
 -- ============================================================================
--- 4. POBLACIÓN DE DATOS DE PRUEBA (SEED DATA REALISTA)
--- Contraseña unificada para usuarios de prueba: '123456'
+-- 4. DATOS INICIALES (Cuentas de acceso y perfiles)
+-- Contraseña unificada para todos los usuarios: '123456'
+-- La tabla 'turnos' se deja VACÍA. Registrá los turnos manualmente
+-- desde el sistema: login como recepcionista → "Registrar Turno".
 -- ============================================================================
 
--- 4.1. Insertar Usuarios
+-- 4.1. Insertar Usuarios (ON DUPLICATE KEY UPDATE para reinstalaciones)
 INSERT INTO usuarios (id_usuario, nombre, apellido, dni, email, contrasena, rol, estado) VALUES
 -- Recepcionistas
 (1, 'Elena', 'Martínez', '30111222', 'operador@medicore.com', '$2y$10$ND4hx0JaZNegxul76e3D2uYsf.b8aDbVHo3Hmv2cpW6ki54xjZEoG', 'recepcionista', 'activo'),
@@ -177,7 +179,7 @@ INSERT INTO medicos (id_medico, id_usuario, especialidad, matricula) VALUES
 (4, 6, 'Traumatología', 'MN-44910')
 ON DUPLICATE KEY UPDATE especialidad=VALUES(especialidad), matricula=VALUES(matricula);
 
--- 4.3. Insertar Pacientes (Datos complementarios)
+-- 4.3. Insertar Pacientes (Datos complementarios de perfil)
 INSERT INTO pacientes (id_paciente, id_usuario, telefono, direccion, fecha_nacimiento, genero, obra_social) VALUES
 (1, 7, '+54 11 4567-8901', 'Av. Rivadavia 1234, CABA', '1988-04-12', 'Masculino', 'OSDE 210'),
 (2, 8, '+54 11 5566-7788', 'Av. Santa Fe 2450, Piso 4, CABA', '1992-05-24', 'Femenino', 'Swiss Medical'),
@@ -186,20 +188,3 @@ INSERT INTO pacientes (id_paciente, id_usuario, telefono, direccion, fecha_nacim
 (5, 11, '+54 11 2233-4455', 'Cabildo 1500, CABA', '1985-02-14', 'Masculino', 'Medifé'),
 (6, 12, '+54 11 7788-9900', 'Callao 670, CABA', '1995-09-30', 'Femenino', 'OSDE 310')
 ON DUPLICATE KEY UPDATE telefono=VALUES(telefono), obra_social=VALUES(obra_social);
-
--- 4.4. Insertar Turnos Médicos (Citas de prueba para hoy y próximos días)
-INSERT INTO turnos (id_turno, id_paciente, id_medico, fecha, hora, estado, motivo_consulta, notas_medicas) VALUES
--- Turnos para hoy
-(1, 1, 2, CURDATE(), '09:00:00', 'confirmado', 'Control cardiológico anual', 'Paciente asintomático.'),
-(2, 2, 1, CURDATE(), '09:30:00', 'confirmado', 'Consulta de Seguimiento Post-Quirúrgico', 'Evolución favorable tras cirugía valvular.'),
-(3, 3, 1, CURDATE(), '10:30:00', 'en_curso', 'Control post-operatorio y ECG', 'Ligera molestia al esfuerzo leve.'),
-(4, 4, 1, CURDATE(), '11:00:00', 'cancelado', 'Chequeo rutinario', '[Cancelación: Aviso previo del paciente por motivos laborales]'),
-(5, 5, 3, CURDATE(), '11:30:00', 'pendiente', 'Consulta pediátrica general', 'Primera consulta.'),
-(6, 6, 4, CURDATE(), '12:00:00', 'confirmado', 'Dolor articular en rodilla derecha', 'Requiere radiografía previa.'),
-
--- Turnos para próximos días
-(7, 2, 1, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '09:00:00', 'confirmado', 'Revisión de estudios', NULL),
-(8, 1, 3, DATE_ADD(CURDATE(), INTERVAL 2 DAY), '10:00:00', 'pendiente', 'Control general', NULL),
-(9, 3, 4, DATE_ADD(CURDATE(), INTERVAL 3 DAY), '14:30:00', 'confirmado', 'Seguimiento traumatológico', NULL),
-(10, 5, 1, DATE_ADD(CURDATE(), INTERVAL 5 DAY), '16:00:00', 'confirmado', 'Consulta cardiológica', NULL)
-ON DUPLICATE KEY UPDATE estado=VALUES(estado), motivo_consulta=VALUES(motivo_consulta);

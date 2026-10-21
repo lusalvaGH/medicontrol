@@ -17,7 +17,18 @@ $reason = trim((string) ($_POST['motivo_consulta'] ?? ''));
 $message = null;
 $messageType = 'error';
 
-$fixedSlots = ['09:00:00', '09:30:00', '10:00:00', '10:30:00', '11:00:00', '11:30:00', '12:00:00'];
+$fixedSlots = [
+    '08:00:00', '08:30:00',
+    '09:00:00', '09:30:00',
+    '10:00:00', '10:30:00',
+    '11:00:00', '11:30:00',
+    '12:00:00', '12:30:00',
+    '13:00:00', '13:30:00',
+    '14:00:00', '14:30:00',
+    '15:00:00', '15:30:00',
+    '16:00:00', '16:30:00',
+    '17:00:00',
+];
 $dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', $selectedDate);
 $validDate = $dateObject && $dateObject->format('Y-m-d') === $selectedDate;
 if (!$validDate) {
@@ -72,8 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $message === null) {
         $message = 'No se pueden registrar turnos en fechas pasadas.';
     } elseif (!in_array($selectedTime, $fixedSlots, true)) {
         $message = 'Seleccioná un horario disponible válido.';
-    } elseif ($selectedDate === $today->format('Y-m-d') && $selectedTime < $minimumTime) {
-        $message = 'Para hoy, el turno debe ser dentro de al menos 2 horas.';
     } elseif ($selectedPatient <= 0 || $selectedDoctor <= 0) {
         $message = 'Seleccioná un paciente y un médico.';
     } elseif ($reason === '' || mb_strlen($reason) > 255) {
