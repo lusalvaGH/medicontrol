@@ -4,10 +4,12 @@ header('Content-Type: text/html; charset=UTF-8');
 
 require_once __DIR__ . '/../conexion.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/turnos.php';
 
 requireRole('recepcionista');
 
-$today = new DateTimeImmutable('today');
+$today = turnosHoy();
+$now = turnosAhora();
 $selectedDate = trim((string) ($_POST['fecha'] ?? $_GET['fecha'] ?? $today->format('Y-m-d')));
 $selectedDoctor = (int) ($_POST['id_medico'] ?? $_GET['id_medico'] ?? 0);
 $selectedPatient = (int) ($_POST['id_paciente'] ?? 0);
@@ -17,24 +19,12 @@ $reason = trim((string) ($_POST['motivo_consulta'] ?? ''));
 $message = null;
 $messageType = 'error';
 
-$fixedSlots = [
-    '08:00:00', '08:30:00',
-    '09:00:00', '09:30:00',
-    '10:00:00', '10:30:00',
-    '11:00:00', '11:30:00',
-    '12:00:00', '12:30:00',
-    '13:00:00', '13:30:00',
-    '14:00:00', '14:30:00',
-    '15:00:00', '15:30:00',
-    '16:00:00', '16:30:00',
-    '17:00:00',
-];
-$dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', $selectedDate);
-$validDate = $dateObject && $dateObject->format('Y-m-d') === $selectedDate;
-if (!$validDate) {
+$fixedSlots = TURNOS_HORARIOS;
+$invalidDate = !turnosFechaValida($selectedDate);
+if ($invalidDate) {
     $selectedDate = $today->format('Y-m-d');
-    $dateObject = $today;
 }
+$dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', $selectedDate);
 
 $patients = [];
 $doctors = [];
@@ -44,10 +34,11 @@ try {
         SELECT p.id_paciente, u.nombre, u.apellido, u.dni
         FROM pacientes p
         INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
-        WHERE u.nombre LIKE :search_nombre
+        WHERE u.estado = 'activo'
+          AND (u.nombre LIKE :search_nombre
            OR u.apellido LIKE :search_apellido
            OR CONCAT(u.nombre, ' ', u.apellido) LIKE :search_nombre_completo
-           OR u.dni LIKE :search_dni
+           OR u.dni LIKE :search_dni)
         ORDER BY u.apellido, u.nombre
         LIMIT 50
     ");
@@ -68,6 +59,7 @@ try {
         SELECT m.id_medico, m.especialidad, u.nombre, u.apellido
         FROM medicos m
         INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
+        WHERE u.estado = 'activo'
         ORDER BY u.apellido, u.nombre
     ")->fetchAll();
 } catch (PDOException $e) {
@@ -75,19 +67,41 @@ try {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $message === null) {
-    $now = new DateTimeImmutable();
-    $minimumTime = $now->modify('+2 hours')->format('H:i:s');
-    $selectedDateObject = DateTimeImmutable::createFromFormat('!Y-m-d', $selectedDate);
-
-    if (!$selectedDateObject || $selectedDateObject < $today) {
-        $message = 'No se pueden registrar turnos en fechas pasadas.';
-    } elseif (!in_array($selectedTime, $fixedSlots, true)) {
+    if ($invalidDate) {
+        $message = 'La fecha indicada no es válida.';
+    } elseif (!turnosHorarioPermitido($selectedTime)) {
         $message = 'Seleccioná un horario disponible válido.';
+    } elseif (!turnosEsFuturo($selectedDate, $selectedTime, $now)) {
+        $message = 'La fecha y hora elegidas ya pasaron. Elegí un horario futuro.';
     } elseif ($selectedPatient <= 0 || $selectedDoctor <= 0) {
         $message = 'Seleccioná un paciente y un médico.';
     } elseif ($reason === '' || mb_strlen($reason) > 255) {
         $message = 'Ingresá un motivo de consulta de hasta 255 caracteres.';
     } else {
+        try {
+            // El paciente y el médico deben existir y tener el usuario activo
+            $stmtActivo = $pdo->prepare("
+                SELECT
+                    (SELECT COUNT(*) FROM pacientes p INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
+                      WHERE p.id_paciente = :id_paciente AND u.estado = 'activo') AS paciente_ok,
+                    (SELECT COUNT(*) FROM medicos m INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
+                      WHERE m.id_medico = :id_medico AND u.estado = 'activo') AS medico_ok
+            ");
+            $stmtActivo->execute(['id_paciente' => $selectedPatient, 'id_medico' => $selectedDoctor]);
+            $activos = $stmtActivo->fetch();
+        } catch (PDOException $e) {
+            $activos = false;
+        }
+        if (!$activos) {
+            $message = 'No se pudo registrar el turno. Intentá nuevamente más tarde.';
+        } elseif ((int) $activos['paciente_ok'] === 0) {
+            $message = 'El paciente seleccionado no existe o no está activo.';
+        } elseif ((int) $activos['medico_ok'] === 0) {
+            $message = 'El médico seleccionado no existe o no está activo.';
+        }
+    }
+
+    if ($message === null) {
         try {
             $stmtOccupied = $pdo->prepare('SELECT 1 FROM turnos WHERE id_medico = :id_medico AND fecha = :fecha AND hora = :hora LIMIT 1');
             $stmtOccupied->execute([
@@ -229,8 +243,8 @@ $dateDisplay = $dateObject->format('d/m/Y');
           <div class="form-group">
             <label>Horario Disponible</label>
             <div class="time-pills" id="timePills">
-              <?php foreach ($fixedSlots as $slot): $occupied = in_array($slot, $occupiedSlots, true); $slotValue = substr($slot, 0, 5); ?>
-                <button type="button" class="time-pill<?= $selectedTime === $slot ? ' selected' : '' ?><?= $occupied ? ' disabled' : '' ?>" data-time="<?= $slot ?>" <?= $occupied ? 'disabled' : '' ?>><?= $slotValue ?></button>
+              <?php foreach ($fixedSlots as $slot): $occupied = in_array($slot, $occupiedSlots, true); $past = !turnosEsFuturo($selectedDate, $slot, $now); $unavailable = $occupied || $past; $slotValue = substr($slot, 0, 5); ?>
+                <button type="button" class="time-pill<?= $selectedTime === $slot && !$unavailable ? ' selected' : '' ?><?= $unavailable ? ' disabled' : '' ?>" data-time="<?= $slot ?>" <?= $unavailable ? 'disabled title="' . ($occupied ? 'Horario ocupado' : 'Horario pasado') . '"' : '' ?>><?= $slotValue ?></button>
               <?php endforeach; ?>
             </div>
             <input type="hidden" name="hora" id="timeInput" value="<?= htmlspecialchars($selectedTime, ENT_QUOTES, 'UTF-8') ?>" required>

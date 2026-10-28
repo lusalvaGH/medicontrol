@@ -17,6 +17,7 @@ header('Content-Type: application/json; charset=UTF-8');
 
 require_once __DIR__ . '/../conexion.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/turnos.php';
 
 // Solo GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -149,22 +150,15 @@ if (isset($_GET['fecha'])) {
 // MODO 3: Conteo de turnos por día de un mes
 // ──────────────────────────────────────────────
 if (isset($_GET['mes'])) {
-    $mes = trim((string) $_GET['mes']);
+    $mes = is_string($_GET['mes']) ? trim($_GET['mes']) : '';
 
-    if (!preg_match('/^\d{4}-\d{2}$/', $mes)) {
+    $dateObj = turnosParsearMes($mes);
+    if ($dateObj === null) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => 'Mes inválido. Formato esperado: YYYY-MM.']);
         exit;
     }
-
-    [$anio, $numMes] = explode('-', $mes);
-    $primerDia = $mes . '-01';
-    $dateObj = DateTimeImmutable::createFromFormat('!Y-m-d', $primerDia);
-    if (!$dateObj) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Mes inválido.']);
-        exit;
-    }
+    $primerDia = $dateObj->format('Y-m-d');
     $ultimoDia = $dateObj->modify('last day of this month')->format('Y-m-d');
 
     try {

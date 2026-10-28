@@ -4,6 +4,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
 require_once __DIR__ . '/../conexion.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/turnos.php';
 
 requireRole('recepcionista');
 
@@ -271,6 +272,7 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
     .time-slot-btn { background: var(--bg-subtle); border: 1px solid var(--border-color); padding: 0.45rem 0.25rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: var(--text-main); text-align: center; cursor: pointer; transition: all 0.15s; }
     .time-slot-btn:hover { background: #e0f2fe; color: var(--primary); border-color: var(--primary); }
     .time-slot-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 800; box-shadow: 0 2px 4px rgba(0,71,151,0.2); }
+    .time-slot-btn.disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
     /* MODAL DE CLIENTES */
     .client-list-modal { width: 100%; max-width: 600px; }
@@ -296,6 +298,7 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
     .badge-pendiente { background: var(--status-pend-bg); color: var(--status-pend-text); }
     .badge-cancelado { background: var(--status-canc-bg); color: var(--status-canc-text); }
     .badge-encurso { background: var(--status-encurso-bg); color: var(--status-encurso-text); }
+    .badge-atendido { background: var(--status-att-bg); color: var(--status-att-text); }
 
     /* BOTONES */
     .btn {
@@ -425,7 +428,7 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
 
           <div style="display:flex; gap:0.75rem; align-items:center;">
             <button class="btn btn-secondary" onclick="openAllClientsModal()">👥 Todos los Clientes / Pacientes</button>
-            <div class="drag-hint">🤚 Tocá un turno para seleccionar y modificar o arrastralo de horario</div>
+            <div class="drag-hint">🤚 Tocá un turno para seleccionarlo y usá «Modificar este Turno» para editarlo</div>
           </div>
         </div>
 
@@ -485,8 +488,8 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
                     // JSON_HEX_APOS convierte ' → \u0027 (protege el atributo onclick='...')
                     // JSON_HEX_TAG protege < y >. NO usar htmlspecialchars: rompería las " del JSON.
                     $cardArgs = json_encode(
-                        [$cardId, $paciente, $medico, $especialidad, $hora, $turno['fecha'], strtoupper($estado)],
-                        JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_TAG
+                        [$cardId, $paciente, $medico, $especialidad, $hora, $turno['fecha'], $estado, $motivo],
+                        JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT
                     );
                   ?>
                   <div class="slot-row">
@@ -507,7 +510,7 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
             <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
               <span>👤 Paciente Seleccionado</span>
               <?php
-                $sideStatus = $firstTurno ? strtoupper((string) $firstTurno['estado']) : 'SIN SELECCIÓN';
+                $sideStatus = $firstTurno ? mb_strtoupper(TURNOS_ESTADOS[$firstTurno['estado']] ?? (string) $firstTurno['estado']) : 'SIN SELECCIÓN';
                 $sideBadgeClass = $firstTurno ? 'badge-' . strtolower(str_replace('_', '', (string)$firstTurno['estado'])) : 'badge-pendiente';
                 $sidePatient = $firstTurno ? htmlspecialchars((string) $firstTurno['paciente'], ENT_QUOTES, 'UTF-8') : 'Seleccioná un turno';
                 $sideDoctor = $firstTurno ? htmlspecialchars((string) $firstTurno['medico'] . ' (' . $firstTurno['especialidad'] . ')', ENT_QUOTES, 'UTF-8') : '—';
@@ -562,17 +565,17 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
 
           <div class="form-group">
             <label>Paciente</label>
-            <input type="text" id="modalPatientInput" class="input-box" required>
+            <input type="text" id="modalPatientInput" class="input-box" readonly>
           </div>
 
           <div class="grid-2">
             <div class="form-group">
               <label>Médico Asignado</label>
-              <input type="text" id="modalDoctorInput" class="input-box" required>
+              <input type="text" id="modalDoctorInput" class="input-box" readonly>
             </div>
             <div class="form-group">
               <label>Especialidad</label>
-              <input type="text" id="modalSpecInput" class="input-box" required>
+              <input type="text" id="modalSpecInput" class="input-box" readonly>
             </div>
           </div>
 
@@ -592,33 +595,21 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
           <div class="form-group">
             <label>Seleccionar Horario Disponible (Clic en la pastilla):</label>
             <div class="full-time-grid" id="fullTimeGrid">
-              <div class="time-slot-btn" onclick="selectSlotTime('08:00 AM', this)">08:00 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('08:15 AM', this)">08:15 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('08:30 AM', this)">08:30 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('09:00 AM', this)">09:00 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('09:30 AM', this)">09:30 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('10:00 AM', this)">10:00 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('10:30 AM', this)">10:30 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('11:00 AM', this)">11:00 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('11:15 AM', this)">11:15 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('11:30 AM', this)">11:30 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('12:00 PM', this)">12:00 PM</div>
+              <?php foreach (TURNOS_HORARIOS as $slot): $slotHora = substr($slot, 0, 5); ?>
+                <div class="time-slot-btn" data-time="<?= $slotHora ?>" onclick="selectSlotTime('<?= $slotHora ?>', this)"><?= $slotHora ?></div>
+              <?php endforeach; ?>
             </div>
           </div>
 
           <div class="form-group">
             <label>Estado del Turno</label>
-            <select id="modalStatusSelect" class="input-box" style="font-weight:700;">
-              <option value="CONFIRMADO">CONFIRMADO</option>
-              <option value="PENDIENTE">PENDIENTE</option>
-              <option value="EN CURSO">EN CURSO</option>
-              <option value="CANCELADO">CANCELADO</option>
-            </select>
+            <select id="modalStatusSelect" class="input-box" style="font-weight:700;"></select>
+            <p id="modalRulesNote" style="display:none; font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem;"></p>
           </div>
 
           <div class="turn-modal-footer" style="margin: 1.5rem -1.5rem -1.5rem -1.5rem;">
-            <button type="button" class="btn btn-secondary" onclick="cancelTurnFromModal()" style="color:#ef4444;">❌ Cancelar Turno</button>
-            <button type="submit" class="btn btn-primary">✓ Guardar Modificaciones</button>
+            <button type="button" class="btn btn-secondary" id="modalCancelBtn" onclick="cancelTurnFromModal()" style="color:#ef4444;">❌ Cancelar Turno</button>
+            <button type="submit" class="btn btn-primary" id="modalSaveBtn">✓ Guardar Modificaciones</button>
           </div>
         </form>
       </div>
@@ -761,11 +752,30 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
         'spec' => $firstTurno['especialidad'],
         'time' => substr((string)$firstTurno['hora'], 0, 5),
         'dateStr' => $firstTurno['fecha'],
-        'status' => strtoupper((string)$firstTurno['estado']),
+        'status' => (string)$firstTurno['estado'],
         'reason' => $firstTurno['motivo_consulta'] ?? 'Consulta médica programada.',
-    ], JSON_UNESCAPED_UNICODE) : 'null' ?>;
+    ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) : 'null' ?>;
 
-    function handleCardClick(cardId, patient, doctor, spec, time, dateStr, status, cardEl) {
+    // Reglas de turnos (fuente única: includes/turnos.php)
+    const TURNOS_ESTADOS = <?= json_encode(TURNOS_ESTADOS, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+    const TURNOS_TRANSICIONES = <?= json_encode(TURNOS_TRANSICIONES, JSON_HEX_TAG) ?>;
+    const TURNOS_REPROGRAMABLES = <?= json_encode(TURNOS_ESTADOS_REPROGRAMABLES, JSON_HEX_TAG) ?>;
+
+    // Acepta 'en_curso', 'EN_CURSO' o 'EN CURSO' y devuelve el valor de la base ('en_curso')
+    function estadoDb(status) {
+      return String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+    }
+    function estadoEtiqueta(estado) {
+      return String(TURNOS_ESTADOS[estado] || estado).toUpperCase();
+    }
+    function estadoBadgeClass(estado) {
+      return 'badge-' + estado.replace(/_/g, '');
+    }
+
+    // AL TOCAR UN TURNO: SOLO SE SELECCIONA (la edición se abre con «Modificar este Turno»)
+    function handleCardClick(cardId, patient, doctor, spec, time, dateStr, status, reason, cardEl) {
+      const estado = estadoDb(status);
+
       // 1. Marcar el turno seleccionado visualmente
       document.querySelectorAll('.slot-box').forEach(c => c.classList.remove('selected-card-highlight'));
       if (cardEl) {
@@ -773,21 +783,20 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
         currentSelectedCardEl = cardEl;
       }
 
-      currentSelectedTurnoData = { cardId, patient, doctor, spec, time, dateStr, status };
+      currentSelectedTurnoData = { cardId, patient, doctor, spec, time, dateStr, status: estado, reason };
 
       // 2. Actualizar panel lateral de paciente
       document.getElementById('sidePatientName').textContent = patient;
+      document.getElementById('sideAvatar').textContent = String(patient || '').slice(0, 2).toUpperCase();
       document.getElementById('sideDoctorText').textContent = `${doctor} (${spec})`;
       document.getElementById('sideTimeText').textContent = time;
       document.getElementById('sideDateText').textContent = dateStr || "";
+      document.getElementById('sideReasonText').textContent = reason || 'Sin motivo informado';
       const sideBadge = document.getElementById('sideBadge');
       if (sideBadge) {
-        sideBadge.className = `badge badge-${status.toLowerCase().replace(/[\s_]+/g, '')}`;
-        sideBadge.textContent = status;
+        sideBadge.className = `badge ${estadoBadgeClass(estado)}`;
+        sideBadge.textContent = estadoEtiqueta(estado);
       }
-
-      // 3. Abrir la pantalla emergente de Modificación/Ajustes
-      openEditModal(cardId, patient, doctor, spec, time, dateStr, status);
     }
 
     function openEditModalFromSide() {
@@ -805,6 +814,7 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
         const firstCard = document.querySelector('.slot-box');
         if (firstCard) {
           firstCard.click();
+          if (currentSelectedTurnoData) openEditModalFromSide();
         } else {
           showToast('⚠️ No hay turnos en esta fecha para modificar.');
         }
@@ -812,23 +822,55 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
     }
 
     function openEditModal(cardId, patient, doctor, spec, time, dateStr, status) {
+      const estado = estadoDb(status);
+      const siguientes = TURNOS_TRANSICIONES[estado] || [];
+      const reprogramable = TURNOS_REPROGRAMABLES.includes(estado);
+      const esFinal = siguientes.length === 0;
+
+      const modal = document.getElementById('turnEditModal');
+      modal.dataset.estadoOriginal = estado;
+      modal.dataset.fechaOriginal = dateStr || '';
+      modal.dataset.horaOriginal = time || '';
+
       document.getElementById('activeCardId').value = cardId;
       document.getElementById('modalPatientInput').value = patient;
       document.getElementById('modalDoctorInput').value = doctor;
       document.getElementById('modalSpecInput').value = spec;
       document.getElementById('modalTimeInput').value = time;
-      document.getElementById('modalDateInput').value = dateStr || "2023-10-24";
-      document.getElementById('modalStatusSelect').value = status;
+      document.getElementById('modalDateInput').value = dateStr || '';
+      document.getElementById('modalDateInput').disabled = !reprogramable;
+
+      // Solo se ofrecen el estado actual y los estados a los que puede pasar
+      const select = document.getElementById('modalStatusSelect');
+      select.innerHTML = '';
+      [estado, ...siguientes].forEach(valor => {
+        const opt = document.createElement('option');
+        opt.value = valor;
+        opt.textContent = estadoEtiqueta(valor);
+        select.appendChild(opt);
+      });
+      select.value = estado;
+      select.disabled = esFinal;
 
       document.querySelectorAll('.time-slot-btn').forEach(b => {
-        if (b.textContent.trim() === time) {
-          b.classList.add('selected');
-        } else {
-          b.classList.remove('selected');
-        }
+        b.classList.toggle('selected', b.dataset.time === time);
+        b.classList.toggle('disabled', !reprogramable);
       });
 
-      document.getElementById('turnEditModal').classList.add('show');
+      const nota = document.getElementById('modalRulesNote');
+      if (esFinal) {
+        nota.textContent = `El turno está ${estadoEtiqueta(estado)}: es un estado final y no se puede modificar.`;
+      } else if (!reprogramable) {
+        nota.textContent = `Un turno ${estadoEtiqueta(estado)} no se puede reprogramar; solo se puede cambiar su estado.`;
+      } else {
+        nota.textContent = '';
+      }
+      nota.style.display = nota.textContent ? 'block' : 'none';
+
+      document.getElementById('modalSaveBtn').disabled = esFinal;
+      document.getElementById('modalCancelBtn').style.display = siguientes.includes('cancelado') ? '' : 'none';
+
+      modal.classList.add('show');
     }
 
     function closeEditModal() {
@@ -836,6 +878,7 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
     }
 
     function selectSlotTime(timeStr, btnEl) {
+      if (btnEl.classList.contains('disabled')) return;
       document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
       btnEl.classList.add('selected');
       document.getElementById('modalTimeInput').value = timeStr;
@@ -870,23 +913,19 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
       return cleanTime;
     }
 
-    function _estadoParaServidor(statusStr) {
-      const map = { 'CONFIRMADO': 'confirmado', 'PENDIENTE': 'pendiente', 'EN CURSO': 'en_curso', 'ATENDIDO': 'atendido', 'CANCELADO': 'cancelado' };
-      return map[statusStr.toUpperCase()] || statusStr.toLowerCase();
-    }
-
+    // Devuelve la respuesta JSON del servidor si fue exitosa, o null si hubo error (ya informado)
     async function _apiTurno(accion, extraData = {}) {
       const id = _idTurnoReal();
-      if (!id) { showToast('⚠️ No se identificó el turno.'); return false; }
+      if (!id) { showToast('⚠️ No se identificó el turno.'); return null; }
       const body = new URLSearchParams({ accion, id_turno: id, ...extraData });
       try {
         const res = await fetch('api_turno.php', { method: 'POST', body });
         const data = await res.json();
-        if (!data.ok) { showToast('❌ ' + (data.error || 'Error desconocido.')); return false; }
-        return true;
+        if (!data.ok) { showToast('❌ ' + (data.error || 'Error desconocido.')); return null; }
+        return data;
       } catch (err) {
         showToast('❌ Error de red. Intentá nuevamente.');
-        return false;
+        return null;
       }
     }
 
@@ -899,64 +938,58 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
       const spec = document.getElementById('modalSpecInput').value;
       const time = document.getElementById('modalTimeInput').value;
       const dateVal = document.getElementById('modalDateInput').value;
-      const status = document.getElementById('modalStatusSelect').value;
+      const status = estadoDb(document.getElementById('modalStatusSelect').value);
 
       if (!dateVal) { showToast('⚠️ Seleccioná una fecha.'); return; }
       if (!time)    { showToast('⚠️ Seleccioná un horario.'); return; }
 
-      const ok = await _apiTurno('modificar', {
+      const data = await _apiTurno('modificar', {
         fecha:  dateVal,
         hora:   _horaParaServidor(time),
-        estado: _estadoParaServidor(status),
+        estado: status,
       });
 
-      if (!ok) return; // Error ya mostrado por _apiTurno
+      if (!data) return; // Error ya mostrado por _apiTurno
+
+      closeEditModal();
+      if (data.sin_cambios) {
+        showToast('ℹ️ No había cambios para guardar.');
+        return;
+      }
 
       // Actualizar vista local
       const cardEl = document.getElementById(cardId);
       if (cardEl) {
         const titleEl = cardEl.querySelector('.card-title-text');
-        const docEl = cardEl.querySelector('.card-doc-text');
         const badgeEl = cardEl.querySelector('.card-badge');
         if (titleEl) titleEl.textContent = `${time} | ${patient}`;
-        if (docEl) docEl.textContent = `${doctor} (${spec}) • Consultorio Asignado`;
-        cardEl.setAttribute('data-spec', spec);
         cardEl.classList.remove('green', 'blue', 'purple', 'canc', 'selected');
         if (badgeEl) {
           badgeEl.classList.remove('badge-confirmado', 'badge-pendiente', 'badge-encurso', 'badge-cancelado', 'badge-atendido');
           const statusMap = {
-            'CONFIRMADO': ['green','badge-confirmado'],
-            'PENDIENTE':  ['selected','badge-pendiente'],
-            'EN CURSO':   ['purple','badge-encurso'],
-            'ATENDIDO':   ['blue','badge-atendido'],
-            'CANCELADO':  ['canc','badge-cancelado'],
+            confirmado: 'green',
+            pendiente:  'selected',
+            en_curso:   'purple',
+            atendido:   'blue',
+            cancelado:  'canc',
           };
-          const [cls, badgeCls] = statusMap[status.toUpperCase()] || ['',''];
-          if (cls) cardEl.classList.add(cls);
-          badgeEl.classList.add(badgeCls);
-          badgeEl.textContent = status;
+          if (statusMap[status]) cardEl.classList.add(statusMap[status]);
+          badgeEl.classList.add(estadoBadgeClass(status));
+          badgeEl.textContent = estadoEtiqueta(status);
         }
-        document.getElementById('sidePatientName').textContent = patient;
-        document.getElementById('sideDoctorText').textContent = doctor;
-        document.getElementById('sideTimeText').textContent = time;
-        document.getElementById('sideDateText').textContent = dateVal;
       }
 
-      closeEditModal();
       showToast(`✅ Turno guardado en base de datos. ${patient} — ${time} (${dateVal})`);
 
-      // Recargar página para sincronizar con MySQL si cambió la fecha
-      const currentFecha = new URLSearchParams(window.location.search).get('fecha') || '';
-      if (dateVal !== currentFecha && currentFecha !== '') {
-        setTimeout(() => { window.location.reload(); }, 1200);
-      }
+      // Recargar para sincronizar la agenda y los datos del turno con la base
+      setTimeout(() => { window.location.reload(); }, 1200);
     }
 
     async function cancelTurnFromModal() {
       if (!confirm('¿Confirmar cancelación de este turno? Esta acción se guardará en la base de datos.')) return;
 
-      const ok = await _apiTurno('cancelar');
-      if (!ok) return;
+      const data = await _apiTurno('cancelar');
+      if (!data) return;
 
       // Actualizar vista local
       const cardId = document.getElementById('activeCardId').value;
@@ -967,12 +1000,12 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
         const badgeEl = cardEl.querySelector('.card-badge');
         if (badgeEl) {
           badgeEl.className = 'badge badge-cancelado card-badge';
-          badgeEl.textContent = 'CANCELADO';
+          badgeEl.textContent = estadoEtiqueta('cancelado');
         }
       }
-      document.getElementById('modalStatusSelect').value = 'CANCELADO';
       closeEditModal();
       showToast('✅ Turno cancelado y guardado en base de datos.');
+      setTimeout(() => { window.location.reload(); }, 1200);
     }
 
     function openDetailModalFromTop() {
@@ -1006,13 +1039,10 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
       document.getElementById('detailCoverageText').textContent = `${coverage || 'OSDE 410'} • DNI Registrado`;
       document.getElementById('detailReasonText').textContent = reason || "Consulta médica programada en agenda.";
 
+      const estado = estadoDb(status);
       const badge = document.getElementById('detailStatusBadge');
-      badge.className = 'badge';
-      if (status === 'CONFIRMADO') badge.classList.add('badge-confirmado');
-      else if (status === 'PENDIENTE') badge.classList.add('badge-pendiente');
-      else if (status === 'EN CURSO') badge.classList.add('badge-encurso');
-      else if (status === 'CANCELADO') badge.classList.add('badge-cancelado');
-      badge.textContent = status;
+      badge.className = 'badge ' + estadoBadgeClass(estado);
+      badge.textContent = estadoEtiqueta(estado);
 
       document.getElementById('turnDetailModal').classList.add('show');
     }

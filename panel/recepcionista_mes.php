@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../conexion.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/turnos.php';
 
 requireRole('recepcionista');
 
@@ -15,18 +16,18 @@ $usuarioActual  = $usuarioActual !== '' ? $usuarioActual : 'Recepción';
 // ──────────────────────────────────────────────
 // PARÁMETRO DE MES (YYYY-MM, por defecto el mes actual)
 // ──────────────────────────────────────────────
-$mesParam = trim((string) ($_GET['mes'] ?? ''));
-if (!preg_match('/^\d{4}-\d{2}$/', $mesParam)) {
-    $mesParam = date('Y-m');
-}
-[$anioActual, $mesActual] = array_map('intval', explode('-', $mesParam));
+$mesParam = isset($_GET['mes']) && is_string($_GET['mes']) ? trim($_GET['mes']) : '';
+$mesMessage = null;
 
-$primerDiaObj = DateTimeImmutable::createFromFormat('!Y-m', $mesParam);
-if (!$primerDiaObj) {
+$primerDiaObj = turnosParsearMes($mesParam);
+if ($primerDiaObj === null) {
+    if ($mesParam !== '') {
+        $mesMessage = 'El mes indicado no es válido. Se muestra el mes actual.';
+    }
     $mesParam     = date('Y-m');
-    [$anioActual, $mesActual] = array_map('intval', explode('-', $mesParam));
     $primerDiaObj = new DateTimeImmutable('first day of this month midnight');
 }
+[$anioActual, $mesActual] = array_map('intval', explode('-', $mesParam));
 
 $ultimoDiaObj    = $primerDiaObj->modify('last day of this month midnight');
 $diasEnElMes     = (int) $primerDiaObj->format('t');
@@ -262,6 +263,9 @@ $hoy = date('Y-m-d');
 
       <div class="page-padding">
 
+        <?php if ($mesMessage !== null): ?>
+          <div class="alert-error">⚠️ <?= htmlspecialchars($mesMessage, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
         <?php if ($queryError !== null): ?>
           <div class="alert-error">⚠️ <?= htmlspecialchars($queryError, ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>
