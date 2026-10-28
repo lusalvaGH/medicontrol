@@ -1,0 +1,11 @@
+# ============================================================================
+# MEDICONTROL - APIs ANTIGUAS BLOQUEADAS
+# ============================================================================
+# api_turno.php y api_turnos_dia.php fueron reemplazadas por la API nueva
+# (/api/turnos...). Ninguna pantalla las usa; se bloquea su acceso web sin
+# borrar los archivos, que se conservan hasta retirarlos definitivamente.
+# Las pantallas de esta carpeta no se ven afectadas.
+# ============================================================================
+<FilesMatch "^api_turnos?(_dia)?\.php$">
+    Require all denied
+</FilesMatch>

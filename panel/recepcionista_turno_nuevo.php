@@ -4,10 +4,12 @@ header('Content-Type: text/html; charset=UTF-8');
 
 require_once __DIR__ . '/../conexion.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/turnos.php';
 
 requireRole('recepcionista');
 
-$today = new DateTimeImmutable('today');
+$today = turnosHoy();
+$now = turnosAhora();
 $selectedDate = trim((string) ($_POST['fecha'] ?? $_GET['fecha'] ?? $today->format('Y-m-d')));
 $selectedDoctor = (int) ($_POST['id_medico'] ?? $_GET['id_medico'] ?? 0);
 $selectedPatient = (int) ($_POST['id_paciente'] ?? 0);
@@ -17,13 +19,12 @@ $reason = trim((string) ($_POST['motivo_consulta'] ?? ''));
 $message = null;
 $messageType = 'error';
 
-$fixedSlots = ['09:00:00', '09:30:00', '10:00:00', '10:30:00', '11:00:00', '11:30:00', '12:00:00'];
-$dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', $selectedDate);
-$validDate = $dateObject && $dateObject->format('Y-m-d') === $selectedDate;
-if (!$validDate) {
+$fixedSlots = TURNOS_HORARIOS;
+$invalidDate = !turnosFechaValida($selectedDate);
+if ($invalidDate) {
     $selectedDate = $today->format('Y-m-d');
-    $dateObject = $today;
 }
+$dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', $selectedDate);
 
 $patients = [];
 $doctors = [];
@@ -33,10 +34,11 @@ try {
         SELECT p.id_paciente, u.nombre, u.apellido, u.dni
         FROM pacientes p
         INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
-        WHERE u.nombre LIKE :search_nombre
+        WHERE u.estado = 'activo'
+          AND (u.nombre LIKE :search_nombre
            OR u.apellido LIKE :search_apellido
            OR CONCAT(u.nombre, ' ', u.apellido) LIKE :search_nombre_completo
-           OR u.dni LIKE :search_dni
+           OR u.dni LIKE :search_dni)
         ORDER BY u.apellido, u.nombre
         LIMIT 50
     ");
@@ -57,6 +59,7 @@ try {
         SELECT m.id_medico, m.especialidad, u.nombre, u.apellido
         FROM medicos m
         INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
+        WHERE u.estado = 'activo'
         ORDER BY u.apellido, u.nombre
     ")->fetchAll();
 } catch (PDOException $e) {
@@ -64,21 +67,43 @@ try {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $message === null) {
-    $now = new DateTimeImmutable();
-    $minimumTime = $now->modify('+2 hours')->format('H:i:s');
-    $selectedDateObject = DateTimeImmutable::createFromFormat('!Y-m-d', $selectedDate);
-
-    if (!$selectedDateObject || $selectedDateObject < $today) {
-        $message = 'No se pueden registrar turnos en fechas pasadas.';
-    } elseif (!in_array($selectedTime, $fixedSlots, true)) {
+    if (!csrfFormularioValido($_POST['csrf_token'] ?? null)) {
+        $message = 'La página estuvo abierta demasiado tiempo. Recargala e intentá de nuevo.';
+    } elseif ($invalidDate) {
+        $message = 'La fecha indicada no es válida.';
+    } elseif (!turnosHorarioPermitido($selectedTime)) {
         $message = 'Seleccioná un horario disponible válido.';
-    } elseif ($selectedDate === $today->format('Y-m-d') && $selectedTime < $minimumTime) {
-        $message = 'Para hoy, el turno debe ser dentro de al menos 2 horas.';
+    } elseif (!turnosEsFuturo($selectedDate, $selectedTime, $now)) {
+        $message = 'La fecha y hora elegidas ya pasaron. Elegí un horario futuro.';
     } elseif ($selectedPatient <= 0 || $selectedDoctor <= 0) {
         $message = 'Seleccioná un paciente y un médico.';
     } elseif ($reason === '' || mb_strlen($reason) > 255) {
         $message = 'Ingresá un motivo de consulta de hasta 255 caracteres.';
     } else {
+        try {
+            // El paciente y el médico deben existir y tener el usuario activo
+            $stmtActivo = $pdo->prepare("
+                SELECT
+                    (SELECT COUNT(*) FROM pacientes p INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
+                      WHERE p.id_paciente = :id_paciente AND u.estado = 'activo') AS paciente_ok,
+                    (SELECT COUNT(*) FROM medicos m INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
+                      WHERE m.id_medico = :id_medico AND u.estado = 'activo') AS medico_ok
+            ");
+            $stmtActivo->execute(['id_paciente' => $selectedPatient, 'id_medico' => $selectedDoctor]);
+            $activos = $stmtActivo->fetch();
+        } catch (PDOException $e) {
+            $activos = false;
+        }
+        if (!$activos) {
+            $message = 'No se pudo registrar el turno. Intentá nuevamente más tarde.';
+        } elseif ((int) $activos['paciente_ok'] === 0) {
+            $message = 'El paciente seleccionado no existe o no está activo.';
+        } elseif ((int) $activos['medico_ok'] === 0) {
+            $message = 'El médico seleccionado no existe o no está activo.';
+        }
+    }
+
+    if ($message === null) {
         try {
             $stmtOccupied = $pdo->prepare('SELECT 1 FROM turnos WHERE id_medico = :id_medico AND fecha = :fecha AND hora = :hora LIMIT 1');
             $stmtOccupied->execute([
@@ -182,7 +207,9 @@ $dateDisplay = $dateObject->format('d/m/Y');
     </div>
     <div class="modal-body">
       <?php if ($message !== null): ?><div class="notice"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+      <div class="notice" id="apiNotice" role="alert" hidden></div>
       <form method="post" id="newTurnForm">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrfTokenFormulario(), ENT_QUOTES, 'UTF-8') ?>">
         <div class="form-group">
           <label for="patientSearch">Buscar Paciente</label>
           <input id="patientSearch" type="search" class="input-box" value="<?= htmlspecialchars($patientSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="DNI o Nombre..." autocomplete="off">
@@ -220,8 +247,8 @@ $dateDisplay = $dateObject->format('d/m/Y');
           <div class="form-group">
             <label>Horario Disponible</label>
             <div class="time-pills" id="timePills">
-              <?php foreach ($fixedSlots as $slot): $occupied = in_array($slot, $occupiedSlots, true); $slotValue = substr($slot, 0, 5); ?>
-                <button type="button" class="time-pill<?= $selectedTime === $slot ? ' selected' : '' ?><?= $occupied ? ' disabled' : '' ?>" data-time="<?= $slot ?>" <?= $occupied ? 'disabled' : '' ?>><?= $slotValue ?></button>
+              <?php foreach ($fixedSlots as $slot): $occupied = in_array($slot, $occupiedSlots, true); $past = !turnosEsFuturo($selectedDate, $slot, $now); $unavailable = $occupied || $past; $slotValue = substr($slot, 0, 5); ?>
+                <button type="button" class="time-pill<?= $selectedTime === $slot && !$unavailable ? ' selected' : '' ?><?= $unavailable ? ' disabled' : '' ?>" data-time="<?= $slot ?>" <?= $unavailable ? 'disabled title="' . ($occupied ? 'Horario ocupado' : 'Horario pasado') . '"' : '' ?>><?= $slotValue ?></button>
               <?php endforeach; ?>
             </div>
             <input type="hidden" name="hora" id="timeInput" value="<?= htmlspecialchars($selectedTime, ENT_QUOTES, 'UTF-8') ?>" required>
@@ -233,30 +260,67 @@ $dateDisplay = $dateObject->format('d/m/Y');
         </div>
         <div class="modal-footer" style="margin:1.5rem -2rem -1.5rem -2rem;">
           <a href="recepcionista.php" class="btn btn-secondary">Cancelar</a>
-          <button type="submit" class="btn btn-primary">✓ Registrar Turno</button>
+          <button type="submit" class="btn btn-primary" id="submitTurno">✓ Registrar Turno</button>
         </div>
       </form>
     </div>
   </div>
+  <script src="../app/assets/js/api.js"></script>
   <script>
+    const form = document.getElementById('newTurnForm');
     const doctorSelect = document.getElementById('doctorSelect');
     const dateInput = document.getElementById('date');
     const patientSearch = document.getElementById('patientSearch');
     const patientId = document.getElementById('patientId');
     const patientResults = document.getElementById('patientResults');
     const patientButtons = Array.from(document.querySelectorAll('.patient-result'));
+    const timePills = document.getElementById('timePills');
+    const timeInput = document.getElementById('timeInput');
+    const apiNotice = document.getElementById('apiNotice');
+    const submitButton = document.getElementById('submitTurno');
     const specialties = <?= json_encode(array_column($doctors, 'especialidad', 'id_medico'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-    function reloadSlots() {
-      const params = new URLSearchParams({ id_medico: doctorSelect.value, fecha: dateInput.value });
-      window.location.href = 'recepcionista_turno_nuevo.php?' + params.toString();
+
+    function mostrarAviso(mensaje) {
+      apiNotice.textContent = mensaje;
+      apiNotice.hidden = !mensaje;
     }
+
+    // Horarios libres, ocupados o pasados seg\u00fan la API (GET /api/medicos/{id}/disponibilidad)
+    async function cargarDisponibilidad() {
+      if (!doctorSelect.value || !dateInput.value) return;
+      const consulta = doctorSelect.value + '|' + dateInput.value;
+      timePills.dataset.consulta = consulta;
+      try {
+        const data = await MediApi.get('medicos/' + encodeURIComponent(doctorSelect.value) + '/disponibilidad', { fecha: dateInput.value });
+        if (timePills.dataset.consulta !== consulta) return; // cambi\u00f3 el m\u00e9dico o la fecha mientras cargaba
+        const estados = {};
+        data.horarios.forEach(function (h) { estados[h.hora] = h.estado; });
+        timePills.querySelectorAll('.time-pill').forEach(function (pill) {
+          const estado = estados[pill.dataset.time.slice(0, 5)] || 'libre';
+          const noDisponible = estado !== 'libre';
+          pill.disabled = noDisponible;
+          pill.classList.toggle('disabled', noDisponible);
+          pill.title = estado === 'ocupado' ? 'Horario ocupado' : (estado === 'pasado' ? 'Horario pasado' : '');
+          if (noDisponible && pill.classList.contains('selected')) {
+            pill.classList.remove('selected');
+            timeInput.value = '';
+          }
+        });
+        mostrarAviso('');
+      } catch (err) {
+        mostrarAviso(err.message || 'No se pudieron consultar los horarios disponibles.');
+      }
+    }
+
     doctorSelect.addEventListener('change', function () {
       document.getElementById('specialty').value = specialties[this.value] || '';
-      reloadSlots();
+      cargarDisponibilidad();
     });
-    dateInput.addEventListener('change', reloadSlots);
+    dateInput.addEventListener('change', cargarDisponibilidad);
+
     patientSearch.addEventListener('input', function () {
-      const query = this.value.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const query = normalize(this.value);
+      patientResults.hidden = false;
       patientButtons.forEach(function (button) {
         button.hidden = !normalize(button.dataset.label).includes(query);
       });
@@ -272,13 +336,43 @@ $dateDisplay = $dateObject->format('d/m/Y');
         patientResults.hidden = true;
       });
     });
-    document.querySelectorAll('.time-pill:not(.disabled)').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        document.querySelectorAll('.time-pill').forEach(function (item) { item.classList.remove('selected'); });
-        this.classList.add('selected');
-        document.getElementById('timeInput').value = this.dataset.time;
-      });
+
+    timePills.addEventListener('click', function (e) {
+      const pill = e.target.closest('.time-pill');
+      if (!pill || pill.disabled) return;
+      timePills.querySelectorAll('.time-pill').forEach(function (item) { item.classList.remove('selected'); });
+      pill.classList.add('selected');
+      timeInput.value = pill.dataset.time;
     });
+
+    // Registro mediante la API (POST /api/turnos); las reglas se validan en el servidor
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (!patientId.value) { mostrarAviso('Seleccion\u00e1 un paciente de la lista.'); return; }
+      if (!doctorSelect.value) { mostrarAviso('Seleccion\u00e1 un m\u00e9dico.'); return; }
+      if (!timeInput.value) { mostrarAviso('Seleccion\u00e1 un horario disponible.'); return; }
+      const motivo = document.getElementById('reason').value.trim();
+      if (!motivo) { mostrarAviso('Ingres\u00e1 el motivo de consulta.'); return; }
+
+      submitButton.disabled = true;
+      mostrarAviso('');
+      try {
+        const data = await MediApi.post('turnos', {
+          id_paciente: Number(patientId.value),
+          id_medico: Number(doctorSelect.value),
+          fecha: dateInput.value,
+          hora: timeInput.value,
+          motivo_consulta: motivo,
+        });
+        window.location.href = 'recepcionista.php?fecha=' + encodeURIComponent(data.turno.fecha);
+      } catch (err) {
+        mostrarAviso(err.message || 'No se pudo registrar el turno.');
+        if (err.codigo === 'HORARIO_OCUPADO' || err.codigo === 'FECHA_PASADA') cargarDisponibilidad();
+        submitButton.disabled = false;
+      }
+    });
+
+    cargarDisponibilidad();
   </script>
 </body>
 </html>

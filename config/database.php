@@ -42,6 +42,14 @@ class Database {
                 if (!empty($localConfig['charset']))  self::$charset  = (string) $localConfig['charset'];
             }
         }
+
+        // Pruebas automatizadas: la variable de entorno MEDICONTROL_DB permite usar una base
+        // de pruebas. Solo acepta nombres que empiecen con "medicontrol_test", para que nunca
+        // pueda redirigir la aplicación a otra base. Apache no la define.
+        $baseDePruebas = getenv('MEDICONTROL_DB');
+        if (is_string($baseDePruebas) && preg_match('/^medicontrol_test(_[a-z0-9]+)?$/', $baseDePruebas)) {
+            self::$db = $baseDePruebas;
+        }
     }
 
     /**

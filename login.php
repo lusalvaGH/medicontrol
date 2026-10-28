@@ -3,17 +3,29 @@ declare(strict_types=1);
 
 header('Content-Type: text/html; charset=UTF-8');
 
-session_start();
-
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/includes/auth.php';
+
+ensureSessionStarted();
+
+// Con una sesión válida no hace falta volver a iniciar sesión: va directo a su panel
+$usuarioActual = usuarioSesionVigente();
+if ($usuarioActual !== null) {
+    redirigirAlPanel($usuarioActual['rol']);
+}
 
 $error = '';
+$aviso = isset($_GET['registrado']) ? 'Tu cuenta se creó correctamente. Ya podés iniciar sesión.' : '';
+$emailIngresado = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    $contrasena = $_POST['contrasena'] ?? '';
+    $email = is_string($_POST['email'] ?? null) ? trim($_POST['email']) : '';
+    $contrasena = is_string($_POST['contrasena'] ?? null) ? $_POST['contrasena'] : '';
+    $emailIngresado = $email;
 
-    if ($email === '' || $contrasena === '') {
+    if (!csrfFormularioValido($_POST['csrf_token'] ?? null)) {
+        $error = 'La página estuvo abierta demasiado tiempo. Intentá iniciar sesión nuevamente.';
+    } elseif ($email === '' || $contrasena === '') {
         $error = 'Completá todos los campos.';
     } else {
         $sql = "SELECT id_usuario, nombre, apellido, email, contrasena, rol, estado
@@ -26,35 +38,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $usuario = $stmt->fetch();
 
+        // Si el email no existe se verifica igual contra un hash ficticio, para que el
+        // tiempo de respuesta no revele qué emails están registrados.
+        $hash = $usuario ? (string) $usuario['contrasena'] : '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
+        $contrasenaCorrecta = password_verify($contrasena, $hash);
+
         if (
             $usuario &&
             $usuario['estado'] === 'activo' &&
-            password_verify($contrasena, $usuario['contrasena'])
+            $contrasenaCorrecta
         ) {
-            session_regenerate_id(true);
+            if (panelDelRol((string) $usuario['rol']) === null) {
+                $error = 'Email o contraseña incorrectos.';
+            } else {
+                // Identificador de sesión nuevo para evitar la fijación de sesión
+                session_regenerate_id(true);
 
-            $_SESSION['id_usuario'] = $usuario['id_usuario'];
-            $_SESSION['nombre'] = $usuario['nombre'];
-            $_SESSION['apellido'] = $usuario['apellido'];
-            $_SESSION['email'] = $usuario['email'];
-            $_SESSION['rol'] = $usuario['rol'];
+                $_SESSION['id_usuario'] = $usuario['id_usuario'];
+                $_SESSION['nombre'] = $usuario['nombre'];
+                $_SESSION['apellido'] = $usuario['apellido'];
+                $_SESSION['email'] = $usuario['email'];
+                $_SESSION['rol'] = $usuario['rol'];
+                csrfRenovar();
 
-            switch ($usuario['rol']) {
-                case 'paciente':
-                    header('Location: panel/paciente.php');
-                    exit;
-
-                case 'medico':
-                    header('Location: panel/medico.php');
-                    exit;
-
-                case 'recepcionista':
-                    header('Location: panel/recepcionista.php');
-                    exit;
-
-                default:
-                    session_destroy();
-                    $error = 'Rol de usuario no válido.';
+                redirigirAlPanel((string) $usuario['rol']);
             }
         } else {
             $error = 'Email o contraseña incorrectos.';
@@ -260,10 +267,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
-    <div class="top-bar">
-        <a href="index.html">← Volver al Índice de Pantallas</a>
-        <span style="font-size:0.8rem; color:var(--text-muted);">Pantalla 01 de 10</span>
-    </div>
 
     <main class="auth-card">
         <div class="card-icon">+</div>
@@ -275,14 +278,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
             </div>
         <?php endif; ?>
+        <?php if ($aviso !== '' && $error === ''): ?>
+            <div class="error-message" role="status" style="background:#dcfce7; color:#166534;">
+                <?= htmlspecialchars($aviso, ENT_QUOTES, 'UTF-8') ?>
+            </div>
+        <?php endif; ?>
 
         <form method="POST" action="login.php">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrfTokenFormulario(), ENT_QUOTES, 'UTF-8') ?>">
             <div class="form-group">
                 <label for="email">Email</label>
                 <div class="input-wrapper">
                     <span class="input-icon">✉️</span>
                     <input class="input-box" type="email" id="email" name="email"
-                           placeholder="nombre@hospital.com" required>
+                           value="<?= htmlspecialchars($emailIngresado, ENT_QUOTES, 'UTF-8') ?>"
+                           placeholder="nombre@hospital.com" autocomplete="username" required>
                 </div>
             </div>
 
@@ -291,14 +301,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="input-wrapper">
                     <span class="input-icon">🔒</span>
                     <input class="input-box" type="password" id="contrasena" name="contrasena"
-                           placeholder="••••••••" required>
+                           placeholder="••••••••" autocomplete="current-password" required>
                 </div>
             </div>
 
             <button class="btn" type="submit">Iniciar sesión →</button>
         </form>
 
-        <div class="switch-link">¿No tiene una cuenta? <a href="#">Registrarse</a></div>
+        <div class="switch-link">¿Sos paciente y no tenés una cuenta? <a href="register.php">Registrarse</a></div>
         <div class="secure-tag">🛡️ Conexión cifrada de grado médico</div>
     </main>
 

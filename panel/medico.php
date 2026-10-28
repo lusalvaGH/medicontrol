@@ -85,7 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_nota'])) {
     $idTurnoNota = (int) ($_POST['id_turno'] ?? 0);
     $nota        = trim((string) ($_POST['notas_medicas'] ?? ''));
 
-    if ($idTurnoNota > 0 && $idMedico > 0) {
+    if (!csrfFormularioValido($_POST['csrf_token'] ?? null)) {
+        $notaMsg = ['tipo' => 'error', 'texto' => 'La página estuvo abierta demasiado tiempo. Recargala e intentá de nuevo.'];
+    } elseif ($idTurnoNota > 0 && $idMedico > 0) {
         try {
             // Verificar que el turno pertenece a este médico
             $checkNota = $pdo->prepare(
@@ -337,6 +339,12 @@ $estadoBadge = [
                   $motivo   = htmlspecialchars((string) ($t['motivo_consulta'] ?? '—'), ENT_QUOTES, 'UTF-8');
                   $notas    = htmlspecialchars((string) ($t['notas_medicas'] ?? ''), ENT_QUOTES, 'UTF-8');
                   $idT      = (int) $t['id_turno'];
+                  // Argumentos del modal como JSON escapado para el atributo: así ningún texto
+                  // (motivo o notas, con comillas o saltos de línea) puede romper el JavaScript.
+                  $argsModal = htmlspecialchars(json_encode(
+                      [$idT, (string) $t['paciente'], (string) ($t['motivo_consulta'] ?? '—'), (string) ($t['notas_medicas'] ?? '')],
+                      JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+                  ), ENT_QUOTES, 'UTF-8');
                 ?>
                 <tr>
                   <td style="font-weight:800;color:var(--primary);white-space:nowrap;"><?= $hora ?></td>
@@ -352,7 +360,7 @@ $estadoBadge = [
                   <td style="max-width:160px;font-size:.75rem;color:var(--text-muted);"><?= $notas !== '' ? $notas : '<em>Sin notas</em>' ?></td>
                   <td>
                     <button class="btn btn-secondary btn-sm"
-                      onclick="abrirModal(<?= $idT ?>, '<?= $paciente ?>', '<?= $motivo ?>', '<?= addslashes($notas) ?>')">
+                      onclick="abrirModal(...<?= $argsModal ?>)">
                       ✏️ Notas
                     </button>
                   </td>
@@ -377,6 +385,7 @@ $estadoBadge = [
       <button class="close-x" onclick="cerrarModal()">✕</button>
     </div>
     <form method="post">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrfTokenFormulario(), ENT_QUOTES, 'UTF-8') ?>">
       <input type="hidden" name="guardar_nota" value="1">
       <input type="hidden" name="id_turno" id="notaIdTurno">
       <div class="modal-body">
