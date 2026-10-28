@@ -11,7 +11,8 @@ $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PA
 
 if (preg_match('#^/(\.git|config|database|includes|src|tests)(/|$)#i', $ruta)
     || preg_match('#(\.(sql|md|bak|log|ini|ps1|bat|sh)|/\.[^/]*)$#i', $ruta)
-    || preg_match('#^/(instalar|test_conexion)\.php$#i', $ruta)) {
+    || preg_match('#^/(instalar|test_conexion)\.php$#i', $ruta)
+    || preg_match('#^/panel/api_turnos?(_dia)?\.php(/|$)#i', $ruta)) { // APIs antiguas (como panel/.htaccess)
     http_response_code(404);
     exit;
 }

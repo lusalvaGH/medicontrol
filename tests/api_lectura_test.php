@@ -215,9 +215,33 @@ if ($estado === 0) {
         comprobar("HTTP GET {$ruta} está bloqueado (403/404)", in_array($estado, [403, 404], true), "HTTP {$estado}");
     }
 
+    // APIs antiguas reemplazadas por /api: bloqueadas por web con cualquier método (panel/.htaccess).
+    // Sin sesión ni datos: aunque el bloqueo fallara, no podrían escribir.
+    $pedirHttp = static function (string $metodo, string $ruta) use ($base): int {
+        $contexto = stream_context_create(['http' => ['method' => $metodo, 'ignore_errors' => true, 'follow_location' => 0, 'timeout' => 5,
+                                                      'header' => "Content-Type: application/x-www-form-urlencoded\r\n", 'content' => '']]);
+        @file_get_contents($base . $ruta, false, $contexto);
+        $estado = 0;
+        foreach ($http_response_header ?? [] as $linea) {
+            if (preg_match('#^HTTP/\S+\s+(\d{3})#', $linea, $m)) {
+                $estado = (int) $m[1];
+            }
+        }
+
+        return $estado;
+    };
+    foreach (['/panel/api_turno.php', '/panel/api_turnos_dia.php', '/panel/api_turnos_dia.php?fecha=2026-10-27',
+              '/panel/api_turnos_dia.php?id_turno=1', '/panel/api_turnos_dia.php?mes=2026-10'] as $ruta) {
+        foreach (['GET', 'POST', 'PATCH'] as $metodo) {
+            $estado = $pedirHttp($metodo, $ruta);
+            comprobar("API antigua: {$metodo} {$ruta} está bloqueada (403)", $estado === 403, "HTTP {$estado}");
+        }
+    }
+
     foreach (['/login.php' => 200, '/index.html' => 200, '/css/base.css' => 200, '/app/assets/js/api.js' => 200,
               '/panel/recepcionista.php' => 302, '/panel/recepcionista_mes.php' => 302, '/panel/medico.php' => 302,
-              '/panel/paciente.php' => 302, '/panel/api_turnos_dia.php?fecha=2026-10-27' => 401] as $ruta => $esperado) {
+              '/panel/paciente.php' => 302, '/panel/recepcionista_semana.php' => 302, '/panel/recepcionista_turno_nuevo.php' => 302,
+              '/api/turnos?fecha=2026-10-27' => 401, '/api/auth/csrf' => 401] as $ruta => $esperado) {
         [$estado] = $get($ruta);
         comprobar("HTTP GET {$ruta} sigue respondiendo {$esperado}", $estado === $esperado, "HTTP {$estado}");
     }

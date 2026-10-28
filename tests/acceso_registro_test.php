@@ -378,6 +378,18 @@ try {
         $r = $anonimo->pedir('GET', $ruta);
         comprobar("{$ruta} no es accesible", in_array($r['estado'], [403, 404], true), (string) $r['estado']);
     }
+
+    // APIs antiguas: ni siquiera con una sesión de recepción se pueden usar
+    $recep = new Cliente($url);
+    $recep->iniciarSesion('operador@medicore.com', '123456');
+    $estadoAntes = $pdo->query('SELECT estado FROM turnos WHERE id_turno = 1')->fetchColumn();
+    $r = $recep->pedir('POST', '/panel/api_turno.php', ['accion' => 'cancelar', 'id_turno' => '1']);
+    comprobar('recepción con sesión: POST a la API antigua api_turno.php está bloqueado', in_array($r['estado'], [403, 404], true), (string) $r['estado']);
+    comprobar('la API antigua bloqueada no modificó el turno', $pdo->query('SELECT estado FROM turnos WHERE id_turno = 1')->fetchColumn() === $estadoAntes);
+    $r = $recep->pedir('GET', '/panel/api_turnos_dia.php?fecha=2026-10-21');
+    comprobar('recepción con sesión: GET a la API antigua api_turnos_dia.php está bloqueado', in_array($r['estado'], [403, 404], true), (string) $r['estado']);
+    $r = $recep->pedir('GET', '/api/turnos?fecha=2026-10-21');
+    comprobar('recepción con sesión: la API nueva sigue respondiendo', $r['estado'] === 200);
 } catch (Throwable $e) {
     comprobar('la prueba terminó sin excepciones', false, $e->getMessage() . ' en ' . basename($e->getFile()) . ':' . $e->getLine());
 } finally {
