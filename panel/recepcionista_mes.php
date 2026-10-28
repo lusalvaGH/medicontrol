@@ -424,6 +424,7 @@ $hoy = date('Y-m-d');
     <span id="toastMessage"></span>
   </div>
 
+  <script src="../app/assets/js/api.js"></script>
   <script>
     // ══════════════════════════════════════════════════════════
     // ESTADO
@@ -470,18 +471,15 @@ $hoy = date('Y-m-d');
 
       document.getElementById('modalListaDia').classList.add('show');
 
-      // Fetch a la API
-      fetch('api_turnos_dia.php?fecha=' + encodeURIComponent(fecha))
-        .then(function(r) { return r.json(); })
+      // Turnos del día desde la API (GET /api/turnos?fecha=...)
+      MediApi.get('turnos', { fecha: fecha })
         .then(function(data) {
-          if (!data.ok) {
-            mostrarErrorModal(data.error || 'Error al cargar turnos.');
-            return;
-          }
+          if (fechaActiva !== fecha) return; // se eligió otro día mientras cargaba
           renderizarListaTurnos(data.turnos, fechaLegible);
         })
-        .catch(function() {
-          mostrarErrorModal('No se pudo conectar con el servidor.');
+        .catch(function(err) {
+          if (fechaActiva !== fecha) return;
+          mostrarErrorModal(err.message || 'Error al cargar turnos.');
         });
     }
 
@@ -550,20 +548,15 @@ $hoy = date('Y-m-d');
 
       document.getElementById('modalDetalleTurno').classList.add('show');
 
-      fetch('api_turnos_dia.php?id_turno=' + encodeURIComponent(idTurno))
-        .then(function(r) { return r.json(); })
+      // Detalle desde la API (GET /api/turnos/{id})
+      MediApi.get('turnos/' + encodeURIComponent(idTurno))
         .then(function(data) {
-          if (!data.ok) {
-            document.getElementById('modalDetalleCuerpo').innerHTML =
-              '<div style="padding:1.5rem;color:#991b1b;font-size:0.85rem;font-weight:600;">⚠️ ' +
-              escapeHtml(data.error || 'Error al cargar detalle.') + '</div>';
-            return;
-          }
           renderizarDetalleTurno(data.turno);
         })
-        .catch(function() {
+        .catch(function(err) {
           document.getElementById('modalDetalleCuerpo').innerHTML =
-            '<div style="padding:1.5rem;color:#991b1b;font-size:0.85rem;">⚠️ No se pudo conectar.</div>';
+            '<div style="padding:1.5rem;color:#991b1b;font-size:0.85rem;font-weight:600;">⚠️ ' +
+            escapeHtml(err.message || 'Error al cargar detalle.') + '</div>';
         });
     }
 

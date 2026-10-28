@@ -724,6 +724,7 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
     <span id="toastMessage"></span>
   </div>
 
+  <script src="../app/assets/js/api.js"></script>
   <script>
     // CERRAR MODALES AL HACER CLIC EN CUALQUIER LUGAR FUERA DEL MODAL
     document.querySelectorAll('.turn-modal-overlay').forEach(overlay => {
@@ -913,18 +914,18 @@ $firstTurno = !empty($turnos) ? $turnos[0] : null;
       return cleanTime;
     }
 
-    // Devuelve la respuesta JSON del servidor si fue exitosa, o null si hubo error (ya informado)
+    // Guarda en la API (PATCH /api/turnos/{id} o POST /api/turnos/{id}/cancelacion).
+    // Devuelve los datos de la respuesta, o null si hubo error (ya informado al usuario).
     async function _apiTurno(accion, extraData = {}) {
       const id = _idTurnoReal();
       if (!id) { showToast('⚠️ No se identificó el turno.'); return null; }
-      const body = new URLSearchParams({ accion, id_turno: id, ...extraData });
       try {
-        const res = await fetch('api_turno.php', { method: 'POST', body });
-        const data = await res.json();
-        if (!data.ok) { showToast('❌ ' + (data.error || 'Error desconocido.')); return null; }
-        return data;
+        if (accion === 'cancelar') {
+          return await MediApi.post('turnos/' + id + '/cancelacion');
+        }
+        return await MediApi.patch('turnos/' + id, extraData);
       } catch (err) {
-        showToast('❌ Error de red. Intentá nuevamente.');
+        showToast('❌ ' + (err.message || 'Error desconocido.'));
         return null;
       }
     }

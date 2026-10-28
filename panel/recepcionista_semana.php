@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/turnos.php';
 
 requireRole('recepcionista');
 
@@ -8,6 +9,45 @@ $nombreUsuario = trim((string) ($_SESSION['nombre'] ?? ''));
 $apellidoUsuario = trim((string) ($_SESSION['apellido'] ?? ''));
 $usuarioActual = trim($nombreUsuario . ' ' . $apellidoUsuario);
 $usuarioActual = $usuarioActual !== '' ? $usuarioActual : 'Recepción';
+
+// ──────────────────────────────────────────────
+// SEMANA SELECCIONADA (?semana=YYYY-MM-DD, cualquier día de la semana; por defecto, la actual)
+// La semana va de lunes a domingo. Los turnos se cargan desde la API (GET /api/turnos?desde=&hasta=).
+// ──────────────────────────────────────────────
+$hoy = turnosHoy();
+$semanaParam = isset($_GET['semana']) && is_string($_GET['semana']) ? trim($_GET['semana']) : '';
+$semanaMensaje = null;
+$referencia = $hoy;
+if ($semanaParam !== '') {
+    if (turnosFechaValida($semanaParam)) {
+        $referencia = new DateTimeImmutable($semanaParam, $hoy->getTimezone());
+    } else {
+        $semanaMensaje = 'La fecha indicada no es válida. Se muestra la semana actual.';
+    }
+}
+$lunes = $referencia->modify('-' . ((int) $referencia->format('N') - 1) . ' days');
+$domingo = $lunes->modify('+6 days');
+
+$diasSemanaES = [1 => 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+$mesesES = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+$fechaLarga = static fn (DateTimeImmutable $d): string => (int) $d->format('j') . ' de ' . $mesesES[(int) $d->format('n')];
+$tituloSemana = 'Semana del ' . $fechaLarga($lunes)
+    . ($lunes->format('Y') !== $domingo->format('Y') ? ' de ' . $lunes->format('Y') : '')
+    . ' al ' . $fechaLarga($domingo) . ' de ' . $domingo->format('Y');
+
+$diasDeLaSemana = [];
+for ($i = 0; $i < 7; $i++) {
+    $dia = $lunes->modify("+{$i} days");
+    $diasDeLaSemana[] = [
+        'fecha'  => $dia->format('Y-m-d'),
+        'nombre' => $diasSemanaES[(int) $dia->format('N')] . ' ' . $dia->format('j'),
+        'mes'    => ucfirst($mesesES[(int) $dia->format('n')]),
+        'esHoy'  => $dia->format('Y-m-d') === $hoy->format('Y-m-d'),
+    ];
+}
+$semanaAnterior = $lunes->modify('-7 days')->format('Y-m-d');
+$semanaSiguiente = $lunes->modify('+7 days')->format('Y-m-d');
+$e = static fn (string $texto): string => htmlspecialchars($texto, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -156,7 +196,7 @@ $usuarioActual = $usuarioActual !== '' ? $usuarioActual : 'Recepción';
     }
 
     /* VISTA SEMANAL */
-    .weekly-grid-container { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.85rem; overflow-x: auto; margin-bottom: 2rem; }
+    .weekly-grid-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.85rem; overflow-x: auto; margin-bottom: 2rem; }
     .week-col { background: white; border: 2px dashed transparent; border-radius: 12px; padding: 1rem 0.75rem; min-width: 180px; min-height: 480px; transition: all 0.2s; }
     .week-col-header { text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 0.85rem; user-select: none; }
     .week-col-header h3 { font-size: 0.95rem; font-weight: 800; color: #0f172a; }
@@ -168,6 +208,15 @@ $usuarioActual = $usuarioActual !== '' ? $usuarioActual : 'Recepción';
     .week-slot-card.pend { border-left-color: #b45309; background: #fffbeb; }
     .week-slot-card.encurso { border-left-color: #3730a3; background: #f5f3ff; }
     .week-slot-card.canc { border-left-color: #b91c1c; background: #fef2f2; }
+    .week-slot-card.atendido { border-left-color: #0369a1; background: #f0f9ff; }
+    .week-slot-card { cursor: pointer; }
+    .week-col.today { border-color: var(--primary); }
+    .week-col-header a { color: inherit; text-decoration: none; }
+    .week-col-header a:hover h3 { color: var(--primary); text-decoration: underline; }
+    .week-empty { font-size: 0.75rem; color: var(--text-light); text-align: center; padding: 0.75rem 0; }
+    .week-status { grid-column: 1 / -1; padding: 1.5rem; text-align: center; color: var(--text-muted); font-weight: 600; font-size: 0.88rem; }
+    .week-status.error { color: #991b1b; background: #fee2e2; border-radius: 10px; }
+    .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; }
     .week-slot-card.selected-card-highlight {
       border: 2px solid var(--primary) !important;
       box-shadow: 0 0 15px rgba(0, 71, 151, 0.35) !important;
@@ -214,6 +263,7 @@ $usuarioActual = $usuarioActual !== '' ? $usuarioActual : 'Recepción';
     .badge-pendiente { background: var(--status-pend-bg); color: var(--status-pend-text); }
     .badge-cancelado { background: var(--status-canc-bg); color: var(--status-canc-text); }
     .badge-encurso { background: var(--status-encurso-bg); color: var(--status-encurso-text); }
+    .badge-atendido { background: var(--status-att-bg); color: var(--status-att-text); }
 
     /* BOTONES */
     .btn {
@@ -296,363 +346,156 @@ $usuarioActual = $usuarioActual !== '' ? $usuarioActual : 'Recepción';
         <div class="search-input">
           🔍 <input id="turnosSearch" type="search" placeholder="Buscar paciente o médico..." autocomplete="off">
         </div>
-        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);"><?= htmlspecialchars($usuarioActual, ENT_QUOTES, 'UTF-8') ?> (RECEPCIÓN) · <a href="../logout.php" style="color:var(--primary); text-decoration:none;">Cerrar sesión</a></div>
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);"><?= $e($usuarioActual) ?> (RECEPCIÓN) · <a href="../logout.php" style="color:var(--primary); text-decoration:none;">Cerrar sesión</a></div>
       </header>
 
       <div class="page-padding">
-        
-        <!-- Stats de la Semana -->
+
+        <?php if ($semanaMensaje !== null): ?>
+          <div class="alert-warning">⚠️ <?= $e($semanaMensaje) ?></div>
+        <?php endif; ?>
+
+        <!-- Stats de la Semana (se calculan con los turnos reales de la API) -->
         <div class="grid-4" style="margin-bottom: 1.5rem;">
           <div class="stat-card">
             <div>
               <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Turnos de la Semana</div>
-              <div style="font-size:1.6rem; font-weight:800; color:#0f172a; margin-top:0.2rem;">184 <span style="font-size:0.75rem; color:#166534;">+8%</span></div>
+              <div style="font-size:1.6rem; font-weight:800; color:#0f172a; margin-top:0.2rem;" id="statTotal">—</div>
             </div>
           </div>
           <div class="stat-card">
             <div>
               <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Confirmados</div>
-              <div style="font-size:1.6rem; font-weight:800; color:#166534; margin-top:0.2rem;">120</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#166534; margin-top:0.2rem;" id="statConfirmado">—</div>
             </div>
           </div>
           <div class="stat-card">
             <div>
               <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Pendientes</div>
-              <div style="font-size:1.6rem; font-weight:800; color:#b45309; margin-top:0.2rem;">42</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#b45309; margin-top:0.2rem;" id="statPendiente">—</div>
             </div>
           </div>
           <div class="stat-card">
             <div>
               <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">En Curso</div>
-              <div style="font-size:1.6rem; font-weight:800; color:#3730a3; margin-top:0.2rem;">22</div>
+              <div style="font-size:1.6rem; font-weight:800; color:#3730a3; margin-top:0.2rem;" id="statEnCurso">—</div>
             </div>
           </div>
         </div>
 
-        <!-- BARRA DE FILTRADO DE ESPECIALIDAD & TODOS LOS CLIENTES -->
+        <!-- BARRA DE FILTRADO DE ESPECIALIDAD -->
         <div class="filter-bar-card">
           <div class="spec-selector">
             <span style="font-size:0.82rem; font-weight:800; color:#0f172a;">🩺 Especialidad:</span>
             <select class="spec-select-input" id="specFilterSelect">
               <option value="ALL">Todas las Especialidades</option>
-              <option value="Cardiología">Cardiología</option>
-              <option value="Pediatría">Pediatría</option>
-              <option value="Traumatología">Traumatología</option>
-              <option value="Clínica Médica">Clínica Médica</option>
             </select>
           </div>
 
           <div style="display:flex; gap:0.75rem; align-items:center;">
-            <button class="btn btn-secondary" onclick="openAllClientsModal()">👥 Todos los Clientes / Pacientes</button>
-            <div class="drag-hint">🤚 Tocá un turno para modificar o presioná "Detalle del Turno" para ver su ficha</div>
+            <div class="drag-hint">🤚 Tocá un turno para ver su detalle. Para modificarlo o cancelarlo, abrilo en la vista Día.</div>
           </div>
         </div>
 
         <!-- Controls / Switch Vistas -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
           <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-            <a href="04-registrar-turno-modal.html" class="btn btn-primary">⊕ Registrar Turno</a>
-            <!-- El botón de Detalle abre la ficha del turno que el usuario haya seleccionado -->
+            <a href="recepcionista_turno_nuevo.php" class="btn btn-primary">⊕ Registrar Turno</a>
             <button class="btn btn-secondary" onclick="openDetailModalFromTop()">📄 Detalle del Turno</button>
-            <span style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-left:0.5rem;">Semana del 23 al 28 de Octubre, 2023</span>
+            <a href="recepcionista_semana.php?semana=<?= $e($semanaAnterior) ?>" class="btn btn-secondary" style="padding:0.45rem 0.75rem;" aria-label="Semana anterior">‹</a>
+            <span style="font-size:0.95rem; font-weight:800; color:#0f172a;" id="tituloSemana"><?= $e($tituloSemana) ?></span>
+            <a href="recepcionista_semana.php?semana=<?= $e($semanaSiguiente) ?>" class="btn btn-secondary" style="padding:0.45rem 0.75rem;" aria-label="Semana siguiente">›</a>
+            <a href="recepcionista_semana.php" class="btn btn-secondary" style="font-size:0.78rem;">Esta semana</a>
+            <input type="date" value="<?= $e($lunes->format('Y-m-d')) ?>" aria-label="Ir a la semana de una fecha" onchange="if (this.value) window.location.href='recepcionista_semana.php?semana='+encodeURIComponent(this.value)" style="border:1px solid var(--border-dark); border-radius:var(--radius-md); padding:0.35rem 0.6rem; font-size:0.8rem; font-weight:700; color:var(--text-dark); background:var(--bg-subtle); cursor:pointer;">
           </div>
 
           <div class="view-tabs">
             <a href="recepcionista.php" class="tab-btn">Día</a>
             <a href="recepcionista_semana.php" class="tab-btn active">Semana</a>
-            <a href="recepcionista_mes.php" class="tab-btn">Mes</a>
+            <a href="recepcionista_mes.php?mes=<?= $e($lunes->format('Y-m')) ?>" class="tab-btn">Mes</a>
           </div>
         </div>
 
-        <!-- GRILLA SEMANAL -->
-        <div class="weekly-grid-container" id="weeklyGridContainer">
-
-          <!-- Lunes -->
-          <div class="week-col" data-day="Lunes 23 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Lunes 23 de Octubre')">
-            <div class="week-col-header">
-              <h3>Lunes 23</h3>
-              <p>Octubre</p>
-            </div>
-            
-            <div class="week-slot-card conf" id="turn-101" data-spec="Cardiología" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-101', 'Juan Pérez', 'Dr. Roberto Gómez', 'Cardiología', '08:30 AM', '2023-10-23', 'CONFIRMADO', 'OSDE 310', 'Chequeo semanal de rutina cardiológica.', '35.123.456', this)">
-              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Juan Pérez</div>
-              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dr. Roberto Gómez • Cardiología</div>
-              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
-                <strong class="card-time">08:30 AM</strong>
-                <span class="badge badge-confirmado card-badge">CONFIRMADO</span>
+        <!-- GRILLA SEMANAL (lunes a domingo); las tarjetas se cargan desde la API -->
+        <div class="weekly-grid-container" id="weeklyGridContainer"
+             data-desde="<?= $e($lunes->format('Y-m-d')) ?>" data-hasta="<?= $e($domingo->format('Y-m-d')) ?>">
+          <?php foreach ($diasDeLaSemana as $dia): ?>
+            <div class="week-col<?= $dia['esHoy'] ? ' today' : '' ?>" data-fecha="<?= $e($dia['fecha']) ?>">
+              <div class="week-col-header">
+                <a href="recepcionista.php?fecha=<?= $e($dia['fecha']) ?>" title="Abrir este día en la vista Día">
+                  <h3><?= $e($dia['nombre']) ?><?= $dia['esHoy'] ? ' · Hoy' : '' ?></h3>
+                  <p><?= $e($dia['mes']) ?></p>
+                </a>
               </div>
+              <div class="week-col-body"><div class="week-empty">Cargando…</div></div>
             </div>
-
-            <div class="week-slot-card encurso" id="turn-102" data-spec="Cardiología" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-102', 'Marta Gómez', 'Dra. Espinoza', 'Cardiología', '10:00 AM', '2023-10-23', 'EN CURSO', 'IAPOS', 'Control post-operatorio valvular en curso.', '12.333.444', this)">
-              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Marta Gómez</div>
-              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dra. Espinoza • Cardiología</div>
-              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
-                <strong class="card-time">10:00 AM</strong>
-                <span class="badge badge-encurso card-badge">EN CURSO</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Martes -->
-          <div class="week-col" data-day="Martes 24 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Martes 24 de Octubre')">
-            <div class="week-col-header">
-              <h3>Martes 24</h3>
-              <p>Octubre</p>
-            </div>
-            
-            <div class="week-slot-card encurso" id="turn-103" data-spec="Traumatología" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-103', 'Roberto Silva', 'Dr. Martínez', 'Traumatología', '09:00 AM', '2023-10-24', 'EN CURSO', 'Particular', 'Evaluación por esguince de tobillo y kinesiología.', '34.111.999', this)">
-              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Roberto Silva</div>
-              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dr. Martínez • Traumatología</div>
-              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
-                <strong class="card-time">09:00 AM</strong>
-                <span class="badge badge-encurso card-badge">EN CURSO</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Miércoles -->
-          <div class="week-col" data-day="Miércoles 25 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Miércoles 25 de Octubre')">
-            <div class="week-col-header">
-              <h3>Miércoles 25</h3>
-              <p>Octubre</p>
-            </div>
-            
-            <div class="week-slot-card conf" id="turn-104" data-spec="Pediatría" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-104', 'Ana Martinez', 'Dra. María Fernández', 'Pediatría', '11:00 AM', '2023-10-25', 'CONFIRMADO', 'Swiss Medical', 'Control pediátrico de desarrollo y vacunas.', '28.555.666', this)">
-              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Ana Martinez</div>
-              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dra. María Fernández • Pediatría</div>
-              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
-                <strong class="card-time">11:00 AM</strong>
-                <span class="badge badge-confirmado card-badge">CONFIRMADO</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Jueves -->
-          <div class="week-col" data-day="Jueves 26 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Jueves 26 de Octubre')">
-            <div class="week-col-header">
-              <h3>Jueves 26</h3>
-              <p>Octubre</p>
-            </div>
-            
-            <div class="week-slot-card pend" id="turn-105" data-spec="Clínica Médica" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-105', 'Lucía Mendez', 'Médico asignado', 'Clínica Médica', '02:00 PM', '2023-10-26', 'PENDIENTE', 'Galeno', 'Consulta médica general de rutina.', '22.888.777', this)">
-              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Lucía Mendez</div>
-              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Médico asignado • Clínica Médica</div>
-              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
-                <strong class="card-time">02:00 PM</strong>
-                <span class="badge badge-pendiente card-badge">PENDIENTE</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Viernes -->
-          <div class="week-col" data-day="Viernes 27 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Viernes 27 de Octubre')">
-            <div class="week-col-header">
-              <h3>Viernes 27</h3>
-              <p>Octubre</p>
-            </div>
-            
-            <div class="week-slot-card conf" id="turn-106" data-spec="Pediatría" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-106', 'Diego Torres', 'Dra. María Fernández', 'Pediatría', '04:30 PM', '2023-10-27', 'CONFIRMADO', 'OSDE 410', 'Control de rutina pediátrico trimestral.', '40.999.888', this)">
-              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Diego Torres</div>
-              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dra. María Fernández • Pediatría</div>
-              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
-                <strong class="card-time">04:30 PM</strong>
-                <span class="badge badge-confirmado card-badge">CONFIRMADO</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sábado -->
-          <div class="week-col" data-day="Sábado 28 de Octubre" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Sábado 28 de Octubre')">
-            <div class="week-col-header">
-              <h3>Sábado 28</h3>
-              <p>Octubre</p>
-            </div>
-            
-            <div class="week-slot-card canc" id="turn-107" data-spec="Cardiología" draggable="true" ondragstart="handleDragStart(event)" onclick="handleWeeklyCardClick('turn-107', 'Sofia Carranza', 'Dra. Espinoza', 'Cardiología', '09:30 AM', '2023-10-28', 'CANCELADO', 'Medifé', 'Turno cancelado por viaje del paciente.', '42.880.111', this)">
-              <div class="card-patient-name" style="font-weight:800; color:#0f172a;">Sofia Carranza</div>
-              <div class="card-doc-info" style="font-size:0.72rem; color:var(--text-muted);">Dra. Espinoza • Cardiología</div>
-              <div style="margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;">
-                <strong class="card-time">09:30 AM</strong>
-                <span class="badge badge-cancelado card-badge">CANCELADO</span>
-              </div>
-            </div>
-          </div>
-
+          <?php endforeach; ?>
         </div>
 
       </div>
     </div>
   </div>
 
-  <!-- 1. POP-UP MODAL EMERGENTE: MODIFICAR Y AJUSTAR TURNO (AL TOCAR UN TURNO) -->
-  <div class="turn-modal-overlay" id="turnEditModal">
-    <div class="turn-modal-card">
-      <div class="turn-modal-header" style="background: var(--bg-subtle);">
-        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">✏️ Modificar & Ajustar Turno (Semana)</h3>
-        <span class="close-modal" onclick="closeEditModal()">✕</span>
-      </div>
-
-      <div class="turn-modal-body">
-        <form onsubmit="saveModalChanges(event)">
-          <input type="hidden" id="activeCardId">
-
-          <div class="form-group">
-            <label>Paciente</label>
-            <input type="text" id="modalPatientInput" class="input-box" required>
-          </div>
-
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Médico Asignado</label>
-              <input type="text" id="modalDoctorInput" class="input-box" required>
-            </div>
-            <div class="form-group">
-              <label>Especialidad</label>
-              <input type="text" id="modalSpecInput" class="input-box" required>
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="form-group">
-              <label>📆 Seleccionar Fecha</label>
-              <input type="date" id="modalDateInput" class="input-box" required style="font-weight:700; cursor:pointer;">
-            </div>
-            <div class="form-group">
-              <label>Horario Seleccionado</label>
-              <input type="text" id="modalTimeInput" class="input-box" required readonly style="background:#e0f2fe; color:var(--primary); font-weight:800;">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Seleccionar Horario Disponible (Clic en la pastilla):</label>
-            <div class="full-time-grid" id="fullTimeGrid">
-              <div class="time-slot-btn" onclick="selectSlotTime('08:00 AM', this)">08:00 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('08:30 AM', this)">08:30 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('09:00 AM', this)">09:00 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('09:30 AM', this)">09:30 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('10:00 AM', this)">10:00 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('10:30 AM', this)">10:30 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('11:00 AM', this)">11:00 AM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('02:00 PM', this)">02:00 PM</div>
-              <div class="time-slot-btn" onclick="selectSlotTime('04:30 PM', this)">04:30 PM</div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Estado del Turno</label>
-            <select id="modalStatusSelect" class="input-box" style="font-weight:700;">
-              <option value="CONFIRMADO">CONFIRMADO</option>
-              <option value="PENDIENTE">PENDIENTE</option>
-              <option value="EN CURSO">EN CURSO</option>
-              <option value="CANCELADO">CANCELADO</option>
-            </select>
-          </div>
-
-          <div class="turn-modal-footer" style="margin: 1.5rem -1.5rem -1.5rem -1.5rem;">
-            <button type="button" class="btn btn-secondary" onclick="cancelTurnFromModal()" style="color:#ef4444;">❌ Cancelar Turno</button>
-            <button type="submit" class="btn btn-primary">✓ Guardar Modificaciones</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. POP-UP MODAL EMERGENTE: DETALLE DEL TURNO MEDICO (SOLO AL PRESIONAR DETALLE DEL TURNO) -->
+  <!-- DETALLE DEL TURNO (solo lectura, con datos reales) -->
   <div class="turn-modal-overlay" id="turnDetailModal">
     <div class="turn-modal-card" style="max-width: 520px;">
       <div class="turn-modal-header" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white;">
         <h3 style="color: white; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
-          📄 Detalle del Turno Médico (Semana)
+          📄 Detalle del Turno Médico
         </h3>
         <span class="close-modal" style="color: white;" onclick="closeDetailModal()">✕</span>
       </div>
 
       <div class="turn-modal-body" style="padding: 1.25rem;">
-        
+
         <div style="display: flex; justify-content: space-between; align-items: center; background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1.25rem;">
           <div>
             <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Estado del Turno</div>
-            <div style="margin-top: 0.2rem;" id="detailStatusBadgeContainer">
-              <span class="badge badge-confirmado" id="detailStatusBadge">CONFIRMADO</span>
+            <div style="margin-top: 0.2rem;">
+              <span class="badge" id="detailStatusBadge"></span>
             </div>
           </div>
           <div style="text-align: right;">
             <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Horario Programado</div>
-            <div style="font-size: 1.05rem; font-weight: 800; color: var(--primary);" id="detailTimeText">08:30 AM</div>
+            <div style="font-size: 1.05rem; font-weight: 800; color: var(--primary);" id="detailTimeText"></div>
           </div>
         </div>
 
         <div class="detail-info-grid">
           <div class="detail-info-item">
             <label>👤 Paciente</label>
-            <div id="detailPatientText">Juan Pérez</div>
-            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;" id="detailCoverageText">OSDE 310 • DNI: 35.123.456</span>
+            <div id="detailPatientText"></div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;" id="detailCoverageText"></span>
           </div>
 
           <div class="detail-info-item">
             <label>🩺 Médico Tratante</label>
-            <div id="detailDoctorText">Dr. Roberto Gómez</div>
-            <span style="font-size: 0.72rem; color: var(--primary); font-weight: 700;" id="detailSpecText">Cardiología</span>
+            <div id="detailDoctorText"></div>
+            <span style="font-size: 0.72rem; color: var(--primary); font-weight: 700;" id="detailSpecText"></span>
           </div>
 
           <div class="detail-info-item">
             <label>📅 Día / Fecha</label>
-            <div id="detailDateText">Lunes 23 de Octubre</div>
+            <div id="detailDateText"></div>
           </div>
 
           <div class="detail-info-item">
-            <label>🏥 Consultorio</label>
-            <div>Consultorio 2 • Piso 1</div>
+            <label>🆔 Turno</label>
+            <div id="detailIdText"></div>
           </div>
         </div>
 
         <div style="background: var(--bg-subtle); border-left: 4px solid var(--primary); padding: 0.85rem; border-radius: 8px; margin-bottom: 1rem;">
-          <div style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">📝 Motivo de Consulta & Notas</div>
-          <p style="font-size: 0.82rem; color: var(--text-dark); margin: 0; line-height: 1.45;" id="detailReasonText">Control semanal de evolución y medicación.</p>
+          <div style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">📝 Motivo de Consulta</div>
+          <p style="font-size: 0.82rem; color: var(--text-dark); margin: 0; line-height: 1.45;" id="detailReasonText"></p>
         </div>
 
       </div>
 
       <div class="turn-modal-footer" style="padding: 0.85rem 1.25rem;">
-        <button type="button" class="btn btn-secondary" onclick="showToast('🖨️ Imprimiendo comprobante de turno...')">🖨️ Imprimir</button>
-        <button type="button" class="btn btn-primary" onclick="closeDetailModal()">Aceptar y Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL DE LISTADO COMPLETO DE CLIENTES / PACIENTES -->
-  <div class="turn-modal-overlay" id="allClientsModal">
-    <div class="turn-modal-card client-list-modal">
-      <div class="turn-modal-header">
-        <h3>👥 Todos los Clientes / Pacientes Registrados</h3>
-        <span class="close-modal" onclick="closeAllClientsModal()">✕</span>
-      </div>
-      <div class="turn-modal-body" style="padding:0; max-height:400px; overflow-y:auto;">
-        
-        <div class="client-item-card">
-          <div>
-            <strong style="color:#0f172a;">Juan Pérez</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 35.123.456)</span>
-            <div style="font-size:0.75rem; color:var(--text-muted);">OSDE 310 • Tel: +54 11 4567-8901</div>
-          </div>
-          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); handleWeeklyCardClick('turn-101', 'Juan Pérez', 'Dr. Roberto Gómez', 'Cardiología', '08:30 AM', '2023-10-23', 'CONFIRMADO', 'OSDE 310', 'Chequeo semanal.', '35.123.456', null)">Seleccionar</button>
-        </div>
-
-        <div class="client-item-card">
-          <div>
-            <strong style="color:#0f172a;">Roberto Silva</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 34.111.999)</span>
-            <div style="font-size:0.75rem; color:var(--text-muted);">Particular • Tel: +54 11 2233-4455</div>
-          </div>
-          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); handleWeeklyCardClick('turn-103', 'Roberto Silva', 'Dr. Martínez', 'Traumatología', '09:00 AM', '2023-10-24', 'EN CURSO', 'Particular', 'Evaluación por esguince.', '34.111.999', null)">Seleccionar</button>
-        </div>
-
-        <div class="client-item-card">
-          <div>
-            <strong style="color:#0f172a;">Marta Gómez</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(DNI: 12.333.444)</span>
-            <div style="font-size:0.75rem; color:var(--text-muted);">IAPOS • Tel: +54 11 9876-5432</div>
-          </div>
-          <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="closeAllClientsModal(); handleWeeklyCardClick('turn-102', 'Marta Gómez', 'Dra. Espinoza', 'Cardiología', '10:00 AM', '2023-10-23', 'EN CURSO', 'IAPOS', 'Control semanal.', '12.333.444', null)">Seleccionar</button>
-        </div>
-
+        <a class="btn btn-secondary" id="detailOpenDayLink" href="recepcionista.php">📅 Modificar en vista Día</a>
+        <button type="button" class="btn btn-secondary" id="detailCancelBtn" onclick="cancelarTurnoSeleccionado()" style="color:#ef4444;">❌ Cancelar turno</button>
+        <button type="button" class="btn btn-primary" onclick="closeDetailModal()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -662,267 +505,215 @@ $usuarioActual = $usuarioActual !== '' ? $usuarioActual : 'Recepción';
     <span id="toastMessage"></span>
   </div>
 
+  <script src="../app/assets/js/api.js"></script>
   <script>
-    // ESTADO DEL TURNO SELECCIONADO ACTIVO EN LA SEMANA
-    let activeSelectedAppointment = {
-      cardId: 'turn-101',
-      patient: 'Juan Pérez',
-      doctor: 'Dr. Roberto Gómez',
-      spec: 'Cardiología',
-      time: '08:30 AM',
-      dateStr: '2023-10-23',
-      status: 'CONFIRMADO',
-      coverage: 'OSDE 310',
-      reason: 'Chequeo semanal de rutina cardiológica.',
-      dni: '35.123.456'
-    };
+    const ESTADOS = <?= json_encode(TURNOS_ESTADOS, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+    const TRANSICIONES = <?= json_encode(TURNOS_TRANSICIONES, JSON_HEX_TAG) ?>;
+    const CLASE_TARJETA = { pendiente: 'pend', confirmado: 'conf', en_curso: 'encurso', atendido: 'atendido', cancelado: 'canc' };
+    const MESES = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
-    // CERRAR MODALES AL HACER CLIC EN CUALQUIER LUGAR FUERA DEL MODAL
+    const grilla = document.getElementById('weeklyGridContainer');
+    const specFilterSelect = document.getElementById('specFilterSelect');
+    const turnosSearch = document.getElementById('turnosSearch');
+
+    let turnosPorId = {};
+    let turnoSeleccionado = null;
+
+    // CERRAR MODALES AL HACER CLIC FUERA
     document.querySelectorAll('.turn-modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-          overlay.classList.remove('show');
-        }
+        if (e.target === overlay) overlay.classList.remove('show');
       });
     });
 
-    const specFilterSelect = document.getElementById('specFilterSelect');
-    if (specFilterSelect) {
-      specFilterSelect.addEventListener('change', (e) => {
-        const selectedSpec = e.target.value;
-        const cards = document.querySelectorAll('.week-slot-card');
+    function etiquetaEstado(estado) {
+      return String(ESTADOS[estado] || estado).toUpperCase();
+    }
 
-        cards.forEach(card => {
-          const cardSpec = card.getAttribute('data-spec');
-          if (selectedSpec === 'ALL' || cardSpec === selectedSpec) {
-            card.style.display = 'block';
-          } else {
-            card.style.display = 'none';
-          }
-        });
-        showToast(`🩺 Filtrando por especialidad: ${selectedSpec === 'ALL' ? 'Todas' : selectedSpec}`);
+    function fechaLegible(fecha) {
+      const [a, m, d] = fecha.split('-').map(Number);
+      const dia = new Date(a, m - 1, d).getDay();
+      return `${DIAS[dia].charAt(0).toUpperCase() + DIAS[dia].slice(1)} ${d} de ${MESES[m]} de ${a}`;
+    }
+
+    function crearTarjeta(t) {
+      const card = document.createElement('div');
+      card.className = 'week-slot-card ' + (CLASE_TARJETA[t.estado] || '');
+      card.id = 'turn-' + t.id_turno;
+      card.dataset.idTurno = t.id_turno;
+      card.dataset.spec = t.especialidad || '';
+      card.dataset.search = [t.paciente, t.paciente_dni, t.medico, t.especialidad, t.motivo_consulta].join(' ');
+
+      const nombre = document.createElement('div');
+      nombre.className = 'card-patient-name';
+      nombre.style.cssText = 'font-weight:800; color:#0f172a;';
+      nombre.textContent = t.paciente;
+
+      const medico = document.createElement('div');
+      medico.className = 'card-doc-info';
+      medico.style.cssText = 'font-size:0.72rem; color:var(--text-muted);';
+      medico.textContent = `${t.medico} • ${t.especialidad}`;
+
+      const pie = document.createElement('div');
+      pie.style.cssText = 'margin-top:0.4rem; display:flex; justify-content:space-between; align-items:center;';
+      const hora = document.createElement('strong');
+      hora.className = 'card-time';
+      hora.textContent = t.hora;
+      const badge = document.createElement('span');
+      badge.className = 'badge card-badge badge-' + t.estado.replace(/_/g, '');
+      badge.textContent = etiquetaEstado(t.estado);
+      pie.append(hora, badge);
+
+      card.append(nombre, medico, pie);
+      card.addEventListener('click', () => seleccionarTurno(t.id_turno, true));
+      return card;
+    }
+
+    function mostrarEstadoGrilla(mensaje, esError) {
+      grilla.querySelectorAll('.week-col-body').forEach(b => { b.innerHTML = ''; });
+      let aviso = grilla.querySelector('.week-status');
+      if (!aviso) {
+        aviso = document.createElement('div');
+        grilla.prepend(aviso);
+      }
+      aviso.className = 'week-status' + (esError ? ' error' : '');
+      aviso.textContent = mensaje;
+    }
+
+    function renderizarSemana(turnos) {
+      turnosPorId = {};
+      const porFecha = {};
+      turnos.forEach(t => {
+        turnosPorId[t.id_turno] = t;
+        (porFecha[t.fecha] = porFecha[t.fecha] || []).push(t);
+      });
+
+      grilla.querySelectorAll('.week-col').forEach(col => {
+        const cuerpo = col.querySelector('.week-col-body');
+        cuerpo.innerHTML = '';
+        const delDia = porFecha[col.dataset.fecha] || [];
+        if (delDia.length === 0) {
+          const vacio = document.createElement('div');
+          vacio.className = 'week-empty';
+          vacio.textContent = 'Sin turnos';
+          cuerpo.appendChild(vacio);
+        }
+        delDia.forEach(t => cuerpo.appendChild(crearTarjeta(t)));
+      });
+
+      const contar = estado => turnos.filter(t => t.estado === estado).length;
+      document.getElementById('statTotal').textContent = turnos.length;
+      document.getElementById('statConfirmado').textContent = contar('confirmado');
+      document.getElementById('statPendiente').textContent = contar('pendiente');
+      document.getElementById('statEnCurso').textContent = contar('en_curso');
+
+      // Opciones del filtro: solo especialidades presentes en la semana
+      const actual = specFilterSelect.value;
+      specFilterSelect.length = 1;
+      [...new Set(turnos.map(t => t.especialidad).filter(Boolean))].sort().forEach(esp => {
+        specFilterSelect.add(new Option(esp, esp));
+      });
+      specFilterSelect.value = [...specFilterSelect.options].some(o => o.value === actual) ? actual : 'ALL';
+      aplicarFiltros();
+    }
+
+    function aplicarFiltros() {
+      const esp = specFilterSelect.value;
+      const termino = normalizar(turnosSearch.value.trim());
+      grilla.querySelectorAll('.week-slot-card').forEach(card => {
+        const coincideEsp = esp === 'ALL' || card.dataset.spec === esp;
+        const coincideTexto = termino === '' || normalizar(card.dataset.search).includes(termino);
+        card.style.display = coincideEsp && coincideTexto ? '' : 'none';
       });
     }
 
-    function openAllClientsModal() {
-      document.getElementById('allClientsModal').classList.add('show');
-    }
-    function closeAllClientsModal() {
-      document.getElementById('allClientsModal').classList.remove('show');
+    function normalizar(valor) {
+      return String(valor || '').toLocaleLowerCase('es').normalize('NFD').replace(/[̀-ͯ]/g, '');
     }
 
-    // AL TOCAR UN TURNO EN LA GRILLA SEMANAL: RESALTAR SELECCIÓN Y ABRIR MODAL DE MODIFICACIÓN
-    function handleWeeklyCardClick(cardId, patient, doctor, spec, time, dateStr, status, coverage, reason, dni, cardEl) {
-      document.querySelectorAll('.week-slot-card').forEach(c => c.classList.remove('selected-card-highlight'));
-      if (cardEl) cardEl.classList.add('selected-card-highlight');
-
-      // Actualizar estado del turno seleccionado
-      activeSelectedAppointment = { cardId, patient, doctor, spec, time, dateStr, status, coverage, reason, dni };
-
-      // Abrir modal de Modificación/Ajustes
-      openEditModal(cardId, patient, doctor, spec, time, dateStr, status);
+    function seleccionarTurno(idTurno, abrirDetalle) {
+      grilla.querySelectorAll('.week-slot-card').forEach(c => c.classList.remove('selected-card-highlight'));
+      const card = document.getElementById('turn-' + idTurno);
+      if (card) card.classList.add('selected-card-highlight');
+      turnoSeleccionado = turnosPorId[idTurno] || null;
+      if (abrirDetalle && turnoSeleccionado) openDetailModal(turnoSeleccionado);
     }
 
-    function openEditModal(cardId, patient, doctor, spec, time, dateStr, status) {
-      document.getElementById('activeCardId').value = cardId;
-      document.getElementById('modalPatientInput').value = patient;
-      document.getElementById('modalDoctorInput').value = doctor;
-      document.getElementById('modalSpecInput').value = spec;
-      document.getElementById('modalTimeInput').value = time;
-      document.getElementById('modalDateInput').value = dateStr || "2023-10-23";
-      document.getElementById('modalStatusSelect').value = status;
-
-      document.querySelectorAll('.time-slot-btn').forEach(b => {
-        if (b.textContent.trim() === time) {
-          b.classList.add('selected');
-        } else {
-          b.classList.remove('selected');
-        }
-      });
-
-      document.getElementById('turnEditModal').classList.add('show');
-    }
-
-    function closeEditModal() {
-      document.getElementById('turnEditModal').classList.remove('show');
-    }
-
-    function selectSlotTime(timeStr, btnEl) {
-      document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
-      btnEl.classList.add('selected');
-      document.getElementById('modalTimeInput').value = timeStr;
-    }
-
-    // GUARDAR CAMBIOS REALES DE MODIFICACIÓN EN LA SEMANA
-    function saveModalChanges(e) {
-      e.preventDefault();
-      const cardId = document.getElementById('activeCardId').value;
-      const patient = document.getElementById('modalPatientInput').value;
-      const doctor = document.getElementById('modalDoctorInput').value;
-      const spec = document.getElementById('modalSpecInput').value;
-      const time = document.getElementById('modalTimeInput').value;
-      const dateVal = document.getElementById('modalDateInput').value;
-      const status = document.getElementById('modalStatusSelect').value;
-
-      const cardEl = document.getElementById(cardId);
-      if (cardEl) {
-        const nameEl = cardEl.querySelector('.card-patient-name');
-        const docEl = cardEl.querySelector('.card-doc-info');
-        const timeEl = cardEl.querySelector('.card-time');
-        const badgeEl = cardEl.querySelector('.card-badge');
-
-        if (nameEl) nameEl.textContent = patient;
-        if (docEl) docEl.textContent = `${doctor} • ${spec}`;
-        if (timeEl) timeEl.textContent = time;
-
-        cardEl.setAttribute('data-spec', spec);
-        cardEl.classList.remove('conf', 'pend', 'encurso', 'canc');
-
-        if (badgeEl) {
-          badgeEl.classList.remove('badge-confirmado', 'badge-pendiente', 'badge-encurso', 'badge-cancelado');
-
-          if (status === 'CONFIRMADO') {
-            cardEl.classList.add('conf');
-            badgeEl.classList.add('badge-confirmado');
-            badgeEl.textContent = 'CONFIRMADO';
-          } else if (status === 'PENDIENTE') {
-            cardEl.classList.add('pend');
-            badgeEl.classList.add('badge-pendiente');
-            badgeEl.textContent = 'PENDIENTE';
-          } else if (status === 'EN CURSO') {
-            cardEl.classList.add('encurso');
-            badgeEl.classList.add('badge-encurso');
-            badgeEl.textContent = 'EN CURSO';
-          } else if (status === 'CANCELADO') {
-            cardEl.classList.add('canc');
-            badgeEl.classList.add('badge-cancelado');
-            badgeEl.textContent = 'CANCELADO';
-          }
-        }
-      }
-
-      // Actualizar estado global
-      activeSelectedAppointment.patient = patient;
-      activeSelectedAppointment.doctor = doctor;
-      activeSelectedAppointment.spec = spec;
-      activeSelectedAppointment.time = time;
-      activeSelectedAppointment.dateStr = dateVal;
-      activeSelectedAppointment.status = status;
-
-      closeEditModal();
-      showToast(`✅ Cambios aplicados correctamente a ${patient} (${time} - Fecha: ${dateVal})`);
-    }
-
-    function cancelTurnFromModal() {
-      if (confirm("¿Confirmar cancelación de este turno?")) {
-        document.getElementById('modalStatusSelect').value = 'CANCELADO';
-        saveModalChanges(new Event('submit'));
-      }
-    }
-
-    // ABRIR EL MODAL DE DETALLE ÚNICAMENTE AL HACER CLIC EN "DETALLE DEL TURNO"
     function openDetailModalFromTop() {
-      const { patient, doctor, spec, time, dateStr, status, coverage, reason, dni } = activeSelectedAppointment;
-      openDetailModal(patient, doctor, spec, time, dateStr, status, coverage, reason, dni);
+      if (turnoSeleccionado) {
+        openDetailModal(turnoSeleccionado);
+      } else {
+        showToast('⚠️ Seleccioná un turno de la semana para ver su detalle.');
+      }
     }
 
-    function openDetailModal(patient, doctor, spec, time, dateStr, status, coverage, reason, dni) {
-      document.getElementById('detailPatientText').textContent = patient;
-      document.getElementById('detailDoctorText').textContent = doctor;
-      document.getElementById('detailSpecText').textContent = spec;
-      document.getElementById('detailTimeText').textContent = time;
-      document.getElementById('detailDateText').textContent = dateStr || "Semana Actual";
-      document.getElementById('detailCoverageText').textContent = `${coverage || 'OSDE 310'} • DNI: ${dni || '35.123.456'}`;
-      document.getElementById('detailReasonText').textContent = reason || "Consulta médica programada en la agenda semanal.";
-
+    function openDetailModal(t) {
       const badge = document.getElementById('detailStatusBadge');
-      badge.className = 'badge';
-      if (status === 'CONFIRMADO') badge.classList.add('badge-confirmado');
-      else if (status === 'PENDIENTE') badge.classList.add('badge-pendiente');
-      else if (status === 'EN CURSO') badge.classList.add('badge-encurso');
-      else if (status === 'CANCELADO') badge.classList.add('badge-cancelado');
-      badge.textContent = status;
-
+      badge.className = 'badge badge-' + t.estado.replace(/_/g, '');
+      badge.textContent = etiquetaEstado(t.estado);
+      document.getElementById('detailTimeText').textContent = t.hora;
+      document.getElementById('detailPatientText').textContent = t.paciente;
+      document.getElementById('detailCoverageText').textContent = `${t.obra_social || 'Particular'} • DNI: ${t.paciente_dni}`;
+      document.getElementById('detailDoctorText').textContent = t.medico;
+      document.getElementById('detailSpecText').textContent = t.especialidad;
+      document.getElementById('detailDateText').textContent = fechaLegible(t.fecha);
+      document.getElementById('detailIdText').textContent = '#' + t.id_turno;
+      document.getElementById('detailReasonText').textContent = t.motivo_consulta || 'Sin motivo informado';
+      document.getElementById('detailOpenDayLink').href = 'recepcionista.php?fecha=' + encodeURIComponent(t.fecha);
+      // Solo se ofrece cancelar si el estado actual lo permite (las mismas reglas que valida la API)
+      document.getElementById('detailCancelBtn').style.display = (TRANSICIONES[t.estado] || []).includes('cancelado') ? '' : 'none';
       document.getElementById('turnDetailModal').classList.add('show');
+    }
+
+    async function cancelarTurnoSeleccionado() {
+      if (!turnoSeleccionado) return;
+      if (!confirm('¿Confirmar la cancelación de este turno? El cambio se guarda en la base de datos.')) return;
+      const boton = document.getElementById('detailCancelBtn');
+      boton.disabled = true;
+      try {
+        await MediApi.post('turnos/' + turnoSeleccionado.id_turno + '/cancelacion');
+        closeDetailModal();
+        showToast('✅ Turno cancelado y guardado en la base de datos.');
+        await cargarSemana();
+        seleccionarTurno(turnoSeleccionado.id_turno, false);
+      } catch (err) {
+        showToast('❌ ' + (err.message || 'No se pudo cancelar el turno.'));
+      } finally {
+        boton.disabled = false;
+      }
     }
 
     function closeDetailModal() {
       document.getElementById('turnDetailModal').classList.remove('show');
     }
 
-    function handleDragStart(e) {
-      e.dataTransfer.setData('text/plain', e.target.id);
-      e.target.style.opacity = '0.5';
-    }
-
-    function allowDrop(e) {
-      e.preventDefault();
-      e.currentTarget.classList.add('drag-over');
-    }
-
-    function handleDragLeave(e) {
-      e.currentTarget.classList.remove('drag-over');
-    }
-
-    function handleDrop(e, targetDay) {
-      e.preventDefault();
-      e.currentTarget.classList.remove('drag-over');
-      const cardId = e.dataTransfer.getData('text/plain');
-      const cardEl = document.getElementById(cardId);
-      
-      if (cardEl) {
-        cardEl.style.opacity = '1';
-        e.currentTarget.appendChild(cardEl);
-        showToast(`↔️ Turno movido con éxito a ${targetDay}`);
-      }
-    }
-
-    document.addEventListener('dragend', (e) => {
-      if (e.target && e.target.style) {
-        e.target.style.opacity = '1';
-      }
-    });
-
     function showToast(msg) {
       const toast = document.getElementById('toastNotif');
       document.getElementById('toastMessage').textContent = msg;
       toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3500);
-    }
-  </script>
-  <script>
-    const turnosSearch = document.getElementById('turnosSearch');
-    const turnosSemana = Array.from(document.querySelectorAll('.week-slot-card'));
-    const agendaSemana = document.getElementById('weeklyGridContainer');
-
-    function normalizeSearchValue(value) {
-      return value.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      setTimeout(() => { toast.classList.remove('show'); }, 3500);
     }
 
-    if (turnosSearch && agendaSemana && turnosSemana.length > 0) {
-      const searchEmpty = document.createElement('div');
-      searchEmpty.className = 'search-empty';
-      searchEmpty.textContent = 'No se encontraron turnos';
-      agendaSemana.parentElement.insertBefore(searchEmpty, agendaSemana.nextSibling);
+    specFilterSelect.addEventListener('change', aplicarFiltros);
+    turnosSearch.addEventListener('input', aplicarFiltros);
 
-      turnosSearch.addEventListener('input', function () {
-        const term = normalizeSearchValue(this.value.trim());
-        let visibleCount = 0;
-
-        turnosSemana.forEach(function (turno) {
-          const searchableText = turno.textContent + ' ' + (turno.getAttribute('onclick') || '');
-          const matches = term === '' || normalizeSearchValue(searchableText).includes(term);
-          turno.style.display = matches ? '' : 'none';
-          if (matches) {
-            visibleCount++;
-          }
-        });
-
-        searchEmpty.style.display = visibleCount > 0 ? 'none' : 'block';
-      });
+    // Carga de los turnos reales de la semana (GET /api/turnos?desde=&hasta=)
+    async function cargarSemana() {
+      try {
+        const data = await MediApi.get('turnos', { desde: grilla.dataset.desde, hasta: grilla.dataset.hasta });
+        grilla.querySelector('.week-status')?.remove();
+        renderizarSemana(data.turnos);
+      } catch (err) {
+        if (err.estado === 401) {
+          mostrarEstadoGrilla('Tu sesión terminó. Volvé a iniciar sesión para ver la agenda.', true);
+        } else {
+          mostrarEstadoGrilla('⚠️ ' + (err.message || 'No se pudieron cargar los turnos de la semana.'), true);
+        }
+        ['statTotal', 'statConfirmado', 'statPendiente', 'statEnCurso'].forEach(id => { document.getElementById(id).textContent = '—'; });
+      }
     }
+    cargarSemana();
   </script>
 </body>
 </html>

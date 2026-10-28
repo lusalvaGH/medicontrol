@@ -1,0 +1,29 @@
+# ============================================================================
+# MEDICONTROL - REGLAS DE ACCESO WEB (Apache 2.4, requiere AllowOverride All)
+# ============================================================================
+# El repositorio completo se publica a través de htdocs/medicontrol, así que
+# estas reglas evitan exponer archivos internos. Las carpetas internas
+# (database/, config/, includes/, src/, tests/) tienen además su propio
+# .htaccess con "Require all denied".
+# ============================================================================
+
+# Sin listados de directorios
+Options -Indexes
+
+# Repositorio Git: responde como si no existiera
+RedirectMatch 404 /\.git(/|$)
+
+# Volcados SQL, documentación, respaldos, logs y archivos ocultos
+<FilesMatch "(?i)(\.(sql|md|bak|log|ini|ps1|bat|sh)|^\.(env|git).*)$">
+    Require all denied
+</FilesMatch>
+
+# El instalador se ejecuta solo desde la terminal: php instalar.php
+<Files "instalar.php">
+    Require all denied
+</Files>
+
+# El diagnóstico de conexión solo responde desde esta misma máquina
+<Files "test_conexion.php">
+    Require local
+</Files>
