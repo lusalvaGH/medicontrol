@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace MediControl\Http;
 
 use MediControl\Controllers\CatalogoController;
+use MediControl\Controllers\CuentaController;
 use MediControl\Controllers\SistemaController;
 use MediControl\Controllers\TurnosController;
+use MediControl\Controllers\UsuariosController;
 use Throwable;
 
 /**
@@ -21,6 +23,8 @@ final class App
         $router->agregar('GET', '/auth/me', [SistemaController::class, 'usuarioActual']);
         $router->agregar('GET', '/auth/csrf', [SistemaController::class, 'tokenCsrf']);
 
+        $router->agregar('POST', '/cuenta/contrasena', [CuentaController::class, 'cambiarContrasena']);
+
         // /turnos/resumen va antes que /turnos/{id} (aunque {id} solo acepta números)
         $router->agregar('GET', '/turnos/resumen', [TurnosController::class, 'resumen']);
         $router->agregar('GET', '/turnos', [TurnosController::class, 'listar']);
@@ -32,6 +36,14 @@ final class App
         $router->agregar('GET', '/medicos', [CatalogoController::class, 'medicos']);
         $router->agregar('GET', '/medicos/{id}/disponibilidad', [CatalogoController::class, 'disponibilidad']);
         $router->agregar('GET', '/pacientes', [CatalogoController::class, 'pacientes']);
+
+        $router->agregar('GET', '/usuarios', [UsuariosController::class, 'listar']);
+        $router->agregar('POST', '/usuarios', [UsuariosController::class, 'crear']);
+        $router->agregar('GET', '/usuarios/{id}', [UsuariosController::class, 'detalle']);
+        $router->agregar('PATCH', '/usuarios/{id}', [UsuariosController::class, 'modificar']);
+        $router->agregar('POST', '/usuarios/{id}/baja', [UsuariosController::class, 'baja']);
+        $router->agregar('POST', '/usuarios/{id}/reactivacion', [UsuariosController::class, 'reactivar']);
+        $router->agregar('POST', '/usuarios/{id}/contrasena-provisoria', [UsuariosController::class, 'restablecerContrasena']);
 
         return $router;
     }

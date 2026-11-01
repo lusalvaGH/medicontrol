@@ -16,6 +16,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once __DIR__ . '/../src/bootstrap.php';
+require_once __DIR__ . '/helpers/sesion_simulada.php';
 ini_set('display_errors', '1');
 
 // Sesiones en memoria del proceso: sin cookie ni cabeceras (se configura antes de imprimir nada)
@@ -68,7 +69,7 @@ function pedir(string $metodo, string $ruta, array $query = [], array $cuerpo = 
 function iniciarSesionComo(int $idUsuario, string $rol): string
 {
     global $sesionActual;
-    $sesionActual = ['id_usuario' => $idUsuario, 'rol' => $rol];
+    $sesionActual = sesionSimulada($idUsuario, $rol);
     $r = pedir('GET', '/auth/csrf');
 
     return (string) ($r->cuerpo['data']['token'] ?? '');

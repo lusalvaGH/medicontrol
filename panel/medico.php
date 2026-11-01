@@ -245,6 +245,7 @@ $estadoBadge = [
     <div class="sidebar-section">Mi Actividad</div>
     <a class="sidebar-link active" href="medico.php"><span class="ico">📅</span> Mi Agenda</a>
     <div class="sidebar-section">Cuenta</div>
+    <a class="sidebar-link" href="mi_cuenta.php"><span class="ico">🔒</span> Mi cuenta</a>
     <a class="sidebar-link" href="../logout.php"><span class="ico">🚪</span> Cerrar Sesión</a>
   </nav>
 
@@ -256,6 +257,7 @@ $estadoBadge = [
       <div class="topbar-right">
         <span class="role-badge">Médico</span>
         <div class="user-chip"><span class="dot"></span><?= $nombreCompleto ?></div>
+        <a href="mi_cuenta.php" class="btn btn-secondary btn-sm">🔒 Mi cuenta</a>
         <a href="../logout.php" class="btn btn-secondary btn-sm">🚪 Salir</a>
       </div>
     </div>

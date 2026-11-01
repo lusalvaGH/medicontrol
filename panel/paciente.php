@@ -118,6 +118,7 @@ $estilosEstado = [
     <header>
         <div style="font-weight: 800;">MEDICONTROL • Paciente</div>
         <div class="header-links">
+            <a href="mi_cuenta.php">Mi cuenta</a>
             <a href="../logout.php">Cerrar sesión</a>
         </div>
     </header>

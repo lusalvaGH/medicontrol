@@ -30,9 +30,9 @@
 |---|---|---|---|---|
 | RP-09 | Agenda semanal y mensual del médico | Solo existe la vista por día | `09-medico-dashboard.html` | Media (incremento 3) |
 | RP-10 | Ficha del paciente con datos, indicadores e historial de turnos | No existe | `07-paciente-detalle.html` | Media |
-| RP-11 | Alta y edición de pacientes desde recepción | Solo existe el registro que hace el propio paciente | `pacientes/registro.html`, `07-paciente-detalle.html` | Media |
-| RP-12 | Gestión de usuarios y médicos | No existe pantalla ni rol para hacerlo | `02-configuracion-usuarios.html` | Media |
-| RP-13 | Cambiar la contraseña con la sesión iniciada | No existe | `02-configuracion-usuarios.html` | Media |
+| RP-11 | Alta y edición de pacientes desde recepción | **Implementado y comprobado el 01/11/2026** en `panel/recepcionista_configuracion.php` (rama `feature/cambio-contrasena`, sin integrar) | `pacientes/registro.html`, `07-paciente-detalle.html` | Media |
+| RP-12 | Gestión de usuarios y médicos | **Implementado y comprobado el 01/11/2026** en `panel/recepcionista_configuracion.php` (rama `feature/cambio-contrasena`, sin integrar). Recepción gestiona pacientes y médicos, y solo consulta a otros recepcionistas | `02-configuracion-usuarios.html` | Media |
+| RP-13 | Cambiar la contraseña con la sesión iniciada | **Implementado y comprobado el 01/11/2026** en `panel/mi_cuenta.php` y Configuración (rama `feature/cambio-contrasena`, sin integrar) | `02-configuracion-usuarios.html` | Media |
 | RP-14 | Médico: próximo paciente e historial del paciente | No existen | `09-medico-dashboard.html`, `07-paciente-detalle.html` | Baja |
 | RP-15 | Médico: llamar al paciente desde la agenda | No existe; el sistema ya guarda el teléfono | `09-medico-dashboard.html` | Baja |
 

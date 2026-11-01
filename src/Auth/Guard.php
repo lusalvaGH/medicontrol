@@ -28,8 +28,12 @@ final class Guard
             throw new ApiException(401, 'NO_AUTENTICADO', 'Iniciá sesión para continuar.');
         }
 
-        $usuario = (new UsuariosRepository())->buscarPorId($sesion['id_usuario']);
+        $repositorio = new UsuariosRepository();
+        $usuario = $repositorio->buscarPorId($sesion['id_usuario']);
         if ($usuario === null || $usuario['estado'] !== 'activo' || $usuario['rol'] !== $sesion['rol']) {
+            throw new ApiException(401, 'SESION_INVALIDA', 'La sesión ya no es válida. Iniciá sesión nuevamente.');
+        }
+        if (!sesionCoincideConCredencial($repositorio->buscarHashContrasena($sesion['id_usuario']))) {
             throw new ApiException(401, 'SESION_INVALIDA', 'La sesión ya no es válida. Iniciá sesión nuevamente.');
         }
 
