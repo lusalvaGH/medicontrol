@@ -258,7 +258,7 @@ $hoy = date('Y-m-d');
         <div class="search-input">
           🔍 <input id="turnosSearch" type="search" placeholder="Buscar en el calendario..." autocomplete="off">
         </div>
-        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);"><?= htmlspecialchars($usuarioActual, ENT_QUOTES, 'UTF-8') ?> (RECEPCIÓN) · <a href="../logout.php" style="color:var(--primary); text-decoration:none;">Cerrar sesión</a></div>
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);"><?= htmlspecialchars($usuarioActual, ENT_QUOTES, 'UTF-8') ?> (RECEPCIÓN) · <a href="recepcionista_configuracion.php" style="color:var(--primary); text-decoration:none;">Configuración</a> · <a href="mi_cuenta.php" style="color:var(--primary); text-decoration:none;">Mi cuenta</a> · <a href="../logout.php" style="color:var(--primary); text-decoration:none;">Cerrar sesión</a></div>
       </header>
 
       <div class="page-padding">

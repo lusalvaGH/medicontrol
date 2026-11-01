@@ -346,7 +346,7 @@ $e = static fn (string $texto): string => htmlspecialchars($texto, ENT_QUOTES, '
         <div class="search-input">
           🔍 <input id="turnosSearch" type="search" placeholder="Buscar paciente o médico..." autocomplete="off">
         </div>
-        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);"><?= $e($usuarioActual) ?> (RECEPCIÓN) · <a href="../logout.php" style="color:var(--primary); text-decoration:none;">Cerrar sesión</a></div>
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);"><?= $e($usuarioActual) ?> (RECEPCIÓN) · <a href="recepcionista_configuracion.php" style="color:var(--primary); text-decoration:none;">Configuración</a> · <a href="mi_cuenta.php" style="color:var(--primary); text-decoration:none;">Mi cuenta</a> · <a href="../logout.php" style="color:var(--primary); text-decoration:none;">Cerrar sesión</a></div>
       </header>
 
       <div class="page-padding">

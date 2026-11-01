@@ -77,6 +77,14 @@ final class Request
         return is_int($valor) ? (string) $valor : null;
     }
 
+    /** Campo del cuerpo tal como llegó (contraseñas: los espacios cuentan); null si no es texto. */
+    public function campoSinRecortar(string $nombre): ?string
+    {
+        $valor = $this->cuerpo[$nombre] ?? null;
+
+        return is_string($valor) ? $valor : null;
+    }
+
     /** Campo del cuerpo como entero positivo; null si falta o no es válido. */
     public function campoEntero(string $nombre): ?int
     {

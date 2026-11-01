@@ -59,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['apellido'] = $usuario['apellido'];
                 $_SESSION['email'] = $usuario['email'];
                 $_SESSION['rol'] = $usuario['rol'];
+                $_SESSION['huella_credencial'] = huellaDeCredencial((string) $usuario['contrasena']);
                 csrfRenovar();
 
                 redirigirAlPanel((string) $usuario['rol']);

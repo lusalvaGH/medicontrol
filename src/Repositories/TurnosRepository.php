@@ -191,6 +191,29 @@ final class TurnosRepository
         return $stmt->rowCount();
     }
 
+    /**
+     * Turnos sin resolver de un usuario, como médico o como paciente: pendientes o confirmados
+     * a partir de ahora, y cualquier turno en curso.
+     */
+    public function contarSinResolverDeUsuario(int $idUsuario, string $rol, DateTimeImmutable $ahora): int
+    {
+        $union = $rol === 'medico'
+            ? 'INNER JOIN medicos x ON x.id_medico = t.id_medico'
+            : 'INNER JOIN pacientes x ON x.id_paciente = t.id_paciente';
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*)
+            FROM turnos t
+            {$union}
+            WHERE x.id_usuario = :id
+              AND (t.estado = 'en_curso'
+                   OR (t.estado IN ('pendiente', 'confirmado')
+                       AND (t.fecha > :fecha1 OR (t.fecha = :fecha2 AND t.hora >= :hora))))
+        ");
+        $stmt->execute([':id' => $idUsuario, ':fecha1' => $ahora->format('Y-m-d'), ':fecha2' => $ahora->format('Y-m-d'), ':hora' => $ahora->format('H:i:s')]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     private static function formatear(array $fila): array
     {
         $fila['id_turno'] = (int) $fila['id_turno'];

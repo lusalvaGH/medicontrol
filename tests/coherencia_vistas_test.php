@@ -19,6 +19,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once __DIR__ . '/../src/bootstrap.php';
+require_once __DIR__ . '/helpers/sesion_simulada.php';
 ini_set('display_errors', '1');
 
 use MediControl\Http\App;
@@ -77,7 +78,7 @@ $pdo = Database::getConnection();
 $recepcion = $pdo->query("SELECT id_usuario FROM usuarios WHERE rol = 'recepcionista' AND estado = 'activo' ORDER BY id_usuario LIMIT 1")->fetchColumn();
 comprobar('la base tiene una recepcionista activa', $recepcion !== false);
 $recepcion = (int) $recepcion;
-$sesion = ['id_usuario' => $recepcion, 'rol' => 'recepcionista'];
+$sesion = sesionSimulada($recepcion, 'recepcionista');
 
 $api = static function (string $ruta, array $query) use ($sesion) {
     if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -212,7 +213,7 @@ foreach (['medico', 'paciente'] as $rol) {
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
-    $_SESSION = ['id_usuario' => (int) $id, 'rol' => $rol];
+    $_SESSION = sesionSimulada((int) $id, $rol);
     $r = App::manejar(new Request('GET', '/turnos', ['desde' => '2026-10-19', 'hasta' => '2026-10-25']));
     comprobar("API rango con rol {$rol} responde 403", $r->estadoHttp === 403);
     $html = renderizar('recepcionista_semana.php', [], (int) $id, $rol);

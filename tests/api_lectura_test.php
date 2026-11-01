@@ -17,6 +17,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once __DIR__ . '/../src/bootstrap.php';
+require_once __DIR__ . '/helpers/sesion_simulada.php';
 ini_set('display_errors', '1');
 
 use MediControl\Http\App;
@@ -49,7 +50,7 @@ function pedir(string $ruta, array $query = [], ?array $sesion = null, string $m
 
 function sesionDe(?array $usuario): ?array
 {
-    return $usuario === null ? null : ['id_usuario' => (int) $usuario['id_usuario'], 'rol' => $usuario['rol']];
+    return $usuario === null ? null : sesionSimulada((int) $usuario['id_usuario'], $usuario['rol']);
 }
 
 // Sesiones en memoria del proceso: sin cookie ni cabeceras, así funcionan aunque ya se haya impreso algo

@@ -1,0 +1,145 @@
+/* MEDICONTROL - Configuración de Recepción. Usa las variables y el formulario de cuenta.css */
+.cfg-cuerpo { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
+.cfg-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Barra lateral */
+.cfg-lateral { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; background: #fff; border-right: 1px solid var(--border-color); }
+.cfg-marca { padding: 1.5rem; }
+.cfg-marca strong { display: block; font-size: 1.15rem; font-weight: 800; color: var(--primary); }
+.cfg-marca span { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+.cfg-nav { flex: 1; display: flex; flex-direction: column; }
+.cfg-nav a { padding: 0.75rem 1.25rem; border-left: 4px solid transparent; font-size: 0.9rem; color: #475569; text-decoration: none; }
+.cfg-nav a:hover { background: #f8fafc; }
+.cfg-nav a.activo { border-left-color: var(--primary); background: #e8f1fd; color: var(--text-dark); font-weight: 600; }
+.cfg-lateral-pie { padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); }
+.cfg-salir { display: block; margin-bottom: 1rem; font-size: 0.9rem; color: var(--error); text-decoration: none; }
+.cfg-salir:hover { text-decoration: underline; }
+.cfg-perfil { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.cfg-perfil > div { min-width: 0; }
+.cfg-perfil strong { display: block; font-size: 0.8rem; overflow-wrap: anywhere; }
+.cfg-perfil div span { font-size: 0.7rem; color: var(--text-muted); }
+.cfg-iniciales { flex: none; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: #dbe8fb; color: var(--primary); font-size: 0.75rem; font-weight: 700; }
+
+/* Contenido */
+.cfg-principal { min-width: 0; }
+.cfg-superior { display: flex; align-items: center; min-height: 64px; padding: 0.75rem 1.5rem; background: #fff; border-bottom: 1px solid var(--border-color); }
+.cfg-buscar { width: 100%; max-width: 448px; }
+.cfg-buscar input { width: 100%; padding: 0.55rem 1rem; border: 1px solid transparent; border-radius: 999px; background: #f0f4f9; font-size: 0.875rem; }
+.cfg-buscar input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 71, 151, 0.1); }
+.cfg-contenido { max-width: 1440px; margin: 0 auto; padding: 1.5rem; }
+.cfg-contenido h1 { font-size: 1.5rem; font-weight: 600; }
+.cfg-subtitulo { margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--text-muted); }
+.cfg-grilla { display: grid; grid-template-columns: minmax(280px, 4fr) minmax(0, 8fr); gap: 1.5rem; align-items: start; }
+.cfg-tarjeta { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+.cfg-tarjeta h2 { font-size: 1.1rem; font-weight: 600; }
+.cfg-ayuda { font-size: 0.8rem; color: var(--text-muted); }
+
+/* Listado */
+.cfg-usuarios-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 1.25rem 1.5rem; background: #f5f8fd; border-bottom: 1px solid var(--border-color); }
+.cfg-usuarios-cabecera p { font-size: 0.75rem; color: var(--text-muted); }
+.cfg-boton { padding: 0.6rem 1rem; border: 1px solid var(--primary); border-radius: 8px; background: var(--primary); color: #fff; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.cfg-boton:hover { background: var(--primary-hover); }
+.cfg-boton:disabled { opacity: 0.6; cursor: wait; }
+.cfg-boton-secundario { background: #fff; color: var(--primary); }
+.cfg-boton-secundario:hover { background: #f0f4f9; }
+.cfg-boton-peligro { border-color: var(--error); background: var(--error); }
+.cfg-boton-peligro:hover { background: #991b1b; }
+.cfg-filtros { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+.cfg-pestanas { display: flex; gap: 0.25rem; padding: 0.25rem; border-radius: 8px; background: #f0f4f9; }
+.cfg-pestanas button { padding: 0.4rem 0.9rem; border: none; border-radius: 6px; background: transparent; color: #475569; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.cfg-pestanas button[aria-selected="true"] { background: #fff; color: var(--primary); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1); }
+.cfg-filtro-estado { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #475569; }
+.cfg-filtro-estado select, .campo select { padding: 0.45rem 0.6rem; border: 1px solid var(--border-dark); border-radius: 8px; background: #fff; font-size: 0.85rem; }
+.campo select { width: 100%; padding: 0.65rem 0.75rem; font-size: 0.9rem; }
+.cfg-aviso { margin: 0.75rem 1.5rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: var(--ok-bg); color: var(--ok); font-size: 0.85rem; font-weight: 600; }
+.cfg-aviso.es-error { background: var(--error-bg); color: var(--error); }
+.cfg-dialogo-cuerpo .cfg-aviso { margin: 0 0 1rem; }
+
+.cfg-tabla-marco { overflow-x: auto; }
+.cfg-tabla { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.cfg-tabla th { padding: 0.7rem 0.6rem; background: #f8fafc; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; color: #475569; white-space: nowrap; }
+.cfg-tabla td { padding: 0.6rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+.cfg-tabla th:first-child, .cfg-tabla td:first-child { padding-left: 1.5rem; }
+.cfg-tabla th:last-child, .cfg-tabla td:last-child { padding-right: 1.5rem; }
+.cfg-tabla tbody tr:hover { background: #f8fafc; }
+.cfg-derecha { text-align: right !important; }
+.cfg-persona { display: flex; align-items: center; gap: 0.6rem; min-width: 150px; }
+.cfg-persona strong { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.cfg-persona small { display: block; font-size: 0.72rem; color: var(--text-muted); overflow-wrap: anywhere; }
+.cfg-estado { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+.cfg-estado.activo { background: var(--ok-bg); color: var(--ok); }
+.cfg-estado.inactivo { background: #e2e8f0; color: #475569; }
+.cfg-acciones { display: flex; justify-content: flex-end; gap: 0.25rem; }
+.cfg-icono { flex: none; display: grid; place-items: center; width: 2rem; height: 2rem; border: none; border-radius: 8px; background: transparent; color: var(--primary); cursor: pointer; }
+.cfg-icono:hover, .cfg-icono:focus-visible { background: #e8f1fd; }
+.cfg-icono.peligro { color: var(--error); }
+.cfg-icono.peligro:hover, .cfg-icono.peligro:focus-visible { background: var(--error-bg); }
+.cfg-icono svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cfg-vacio { padding: 2rem 1.5rem !important; text-align: center; color: var(--text-muted); }
+.cfg-paginacion { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 0.9rem 1.5rem; }
+.cfg-paginacion p { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+.cfg-paginacion nav { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.cfg-paginacion button { min-width: 2.25rem; padding: 0.35rem 0.7rem; border: 1px solid var(--border-dark); border-radius: 6px; background: #fff; font-size: 0.85rem; cursor: pointer; }
+.cfg-paginacion button[aria-current="page"] { border-color: var(--primary); background: var(--primary); color: #fff; }
+.cfg-paginacion button:disabled { opacity: 0.5; cursor: default; }
+
+.cfg-permisos { grid-column: 1 / -1; }
+.cfg-permisos > h2, .cfg-permisos > .cfg-ayuda { padding: 0 1.5rem; }
+.cfg-permisos > h2 { padding-top: 1.25rem; }
+.cfg-permisos > .cfg-ayuda { padding-bottom: 1rem; }
+.cfg-permisos tbody tr:last-child td { border-bottom: none; }
+
+/* Diálogos */
+.cfg-dialogo { width: min(640px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: none; border-radius: 16px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2); overflow: hidden; }
+.cfg-dialogo[open] { display: flex; flex-direction: column; }
+.cfg-dialogo-chico { width: min(440px, calc(100vw - 2rem)); }
+.cfg-dialogo::backdrop { background: rgba(15, 23, 42, 0.5); }
+.cfg-dialogo form { display: flex; flex-direction: column; min-height: 0; max-height: calc(100dvh - 2rem); }
+.cfg-dialogo-cabecera { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+.cfg-dialogo-cabecera h2 { font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.cfg-cerrar { flex: none; width: 2.25rem; height: 2.25rem; border: none; border-radius: 8px; background: transparent; color: #475569; font-size: 1rem; cursor: pointer; }
+.cfg-cerrar:hover { background: #f0f4f9; }
+.cfg-dialogo-cuerpo { flex: 1; min-height: 0; padding: 1.25rem 1.5rem; overflow-y: auto; font-size: 0.9rem; }
+.cfg-dialogo-cuerpo > .cfg-ayuda { margin-bottom: 1rem; }
+.cfg-dialogo-pie { flex: none; display: flex; justify-content: flex-end; gap: 0.5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); }
+.cfg-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; }
+.cfg-campo-ancho { grid-column: 1 / -1; }
+.cfg-error { display: block; margin-top: 0.25rem; font-size: 0.75rem; font-weight: 600; color: var(--error); }
+.campo input[aria-invalid="true"], .campo select[aria-invalid="true"] { border-color: var(--error); }
+.campo input:disabled, .campo select:disabled { background: #f8fafc; color: #475569; }
+
+/* Tableta */
+@media (max-width: 1100px) {
+  .cfg-grilla { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Celular */
+@media (max-width: 760px) {
+  .cfg-cuerpo { display: block; }
+  .cfg-lateral { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+  .cfg-marca { padding: 0.9rem 1rem 0.4rem; display: flex; align-items: baseline; gap: 0.5rem; }
+  .cfg-nav { flex-direction: row; flex-wrap: wrap; padding: 0 0.5rem; }
+  .cfg-nav a { padding: 0.55rem 0.6rem; border-left: none; border-bottom: 3px solid transparent; font-size: 0.82rem; }
+  .cfg-nav a.activo { border-bottom-color: var(--primary); background: transparent; }
+  .cfg-lateral-pie { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; }
+  .cfg-salir { order: 2; flex: none; margin: 0; font-size: 0.82rem; }
+  .cfg-iniciales { display: none; }
+  .cfg-superior { min-height: 0; padding: 0.6rem 1rem; }
+  .cfg-buscar { max-width: none; }
+  .cfg-contenido { padding: 1rem; }
+  .cfg-usuarios-cabecera, .cfg-filtros, .cfg-paginacion { padding-left: 1rem; padding-right: 1rem; }
+  .cfg-aviso { margin-left: 1rem; margin-right: 1rem; }
+
+  /* La tabla se muestra como tarjetas */
+  .cfg-tabla thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .cfg-tabla, .cfg-tabla tbody, .cfg-tabla tr, .cfg-tabla td { display: block; width: 100%; }
+  .cfg-tabla tr { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); }
+  .cfg-tabla td, .cfg-tabla td:first-child, .cfg-tabla td:last-child { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.3rem 0; border: none; text-align: right; }
+  .cfg-tabla td[data-etiqueta]::before { content: attr(data-etiqueta); flex: none; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-align: left; }
+  .cfg-tabla td.cfg-celda-persona { display: block; text-align: left; }
+  .cfg-tabla td.cfg-vacio { display: block; text-align: center; }
+  .cfg-acciones { width: 100%; }
+  .cfg-permisos > h2, .cfg-permisos > .cfg-ayuda { padding-left: 1rem; padding-right: 1rem; }
+  .cfg-campos { grid-template-columns: minmax(0, 1fr); }
+  .cfg-dialogo-cabecera, .cfg-dialogo-cuerpo, .cfg-dialogo-pie { padding-left: 1rem; padding-right: 1rem; }
+}

@@ -72,7 +72,7 @@ function usuarioSesionVigente(): ?array
     }
 
     try {
-        $stmt = Database::getConnection()->prepare('SELECT rol, estado FROM usuarios WHERE id_usuario = :id LIMIT 1');
+        $stmt = Database::getConnection()->prepare('SELECT rol, estado, contrasena FROM usuarios WHERE id_usuario = :id LIMIT 1');
         $stmt->execute([':id' => $usuario['id_usuario']]);
         $fila = $stmt->fetch();
     } catch (PDOException $e) {
@@ -81,13 +81,39 @@ function usuarioSesionVigente(): ?array
         die('El servicio no está disponible en este momento. Intentá nuevamente más tarde.');
     }
 
-    if (!$fila || $fila['estado'] !== 'activo' || $fila['rol'] !== $usuario['rol']) {
+    if (!$fila || $fila['estado'] !== 'activo' || $fila['rol'] !== $usuario['rol'] || !sesionCoincideConCredencial($fila['contrasena'])) {
         cerrarSesion();
 
         return null;
     }
 
     return $usuario;
+}
+
+/**
+ * Huella de sesión: resumen de un solo sentido del hash de la contraseña. Se guarda solo en
+ * la sesión del servidor y nunca se envía al navegador. Al cambiar la contraseña cambia la
+ * huella, y las demás sesiones de ese usuario dejan de ser válidas.
+ */
+function huellaDeCredencial(string $hashContrasena): string
+{
+    return hash('sha256', 'medicontrol-sesion|' . $hashContrasena);
+}
+
+function sesionCoincideConCredencial(?string $hashContrasena): bool
+{
+    $huella = $_SESSION['huella_credencial'] ?? null;
+
+    return is_string($huella) && $hashContrasena !== null && hash_equals(huellaDeCredencial($hashContrasena), $huella);
+}
+
+/** Después de guardar una contraseña nueva: esta sesión sigue válida con otro identificador y otro token. */
+function renovarSesionTrasCambioDeContrasena(string $hashNuevo): void
+{
+    ensureSessionStarted();
+    session_regenerate_id(true);
+    $_SESSION['huella_credencial'] = huellaDeCredencial($hashNuevo);
+    csrfRenovar();
 }
 
 function isAuthenticated(): bool
