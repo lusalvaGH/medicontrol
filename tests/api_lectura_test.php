@@ -238,7 +238,7 @@ if ($estado === 0) {
         }
     }
 
-    foreach (['/login.php' => 200, '/index.html' => 200, '/css/base.css' => 200, '/app/assets/js/api.js' => 200,
+    foreach (['/login.php' => 200, '/css/base.css' => 200, '/app/assets/js/api.js' => 200,
               '/panel/recepcionista.php' => 302, '/panel/recepcionista_mes.php' => 302, '/panel/medico.php' => 302,
               '/panel/paciente.php' => 302, '/panel/recepcionista_semana.php' => 302, '/panel/recepcionista_turno_nuevo.php' => 302,
               '/api/turnos?fecha=2026-10-27' => 401, '/api/auth/csrf' => 401] as $ruta => $esperado) {
