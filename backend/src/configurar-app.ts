@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
+import { configurarSesiones } from './auth/sesion.config';
 import { ErroresFilter } from './comun/errores.filter';
 import { RespuestaInterceptor } from './comun/respuesta.interceptor';
 
@@ -17,4 +18,5 @@ export function configurarApp(app: INestApplication): void {
     respuesta.setHeader('X-Content-Type-Options', 'nosniff');
     siguiente();
   });
+  configurarSesiones(app);
 }

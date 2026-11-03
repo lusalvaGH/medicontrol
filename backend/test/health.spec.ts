@@ -1,9 +1,7 @@
 import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { configurarApp } from '../src/configurar-app';
 import { POOL_DB } from '../src/database/database.module';
+import { crearApp } from './helpers/app-prueba';
 
 /**
  * Prueba de integración contra MariaDB. Solo lee (SELECT 1) y exige una base de pruebas:
@@ -13,14 +11,7 @@ describe('GET /api/health', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const nombre = process.env.DB_NAME ?? '';
-    if (!/^medicontrol_test(_[a-z0-9]+)?$/.test(nombre)) {
-      throw new Error(`ABORTADO: las pruebas solo corren contra medicontrol_test (DB_NAME=${nombre || 'vacío'}).`);
-    }
-    const modulo = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = modulo.createNestApplication();
-    configurarApp(app);
-    await app.init();
+    app = await crearApp();
   });
 
   afterAll(async () => {
@@ -34,6 +25,11 @@ describe('GET /api/health', () => {
     expect(r.headers['cache-control']).toBe('no-store');
     expect(r.headers['x-content-type-options']).toBe('nosniff');
     expect(r.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('es pública y no crea una sesión', async () => {
+    const r = await request(app.getHttpServer()).get('/api/health');
+    expect(r.headers['set-cookie']).toBeUndefined();
   });
 
   it('usa la base de pruebas configurada', async () => {

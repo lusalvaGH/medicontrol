@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { leerConfiguracion } from './config/configuracion';
+import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { SistemaController } from './sistema/sistema.controller';
 
@@ -13,6 +14,7 @@ import { SistemaController } from './sistema/sistema.controller';
       load: [() => leerConfiguracion(process.env)],
     }),
     DatabaseModule,
+    AuthModule,
   ],
   controllers: [SistemaController],
 })

@@ -37,6 +37,8 @@
     "@nestjs/config": "4.0.4",
     "@nestjs/core": "11.2.8",
     "@nestjs/platform-express": "11.2.8",
+    "bcryptjs": "3.0.3",
+    "express-session": "1.19.0",
     "mysql2": "3.24.6",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
@@ -47,6 +49,7 @@
   "devDependencies": {
     "@nestjs/testing": "11.2.8",
     "@types/express": "5.0.6",
+    "@types/express-session": "1.19.0",
     "@types/jest": "30.0.0",
     "@types/node": "24.19.2",
     "@types/supertest": "7.2.1",

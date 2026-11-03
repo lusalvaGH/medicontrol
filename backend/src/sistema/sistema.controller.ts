@@ -1,5 +1,6 @@
 import { Controller, Get, Inject, Logger } from '@nestjs/common';
 import type { Pool } from 'mysql2/promise';
+import { Publico } from '../auth/decoradores';
 import { ApiException } from '../comun/api-exception';
 import { POOL_DB } from '../database/database.module';
 
@@ -10,6 +11,7 @@ export class SistemaController {
   constructor(@Inject(POOL_DB) private readonly pool: Pool) {}
 
   /** GET /api/health — público; no expone versiones ni detalles de conexión. */
+  @Publico()
   @Get('health')
   async salud(): Promise<{ estado: string; base_de_datos: string }> {
     try {
