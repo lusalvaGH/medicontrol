@@ -34,7 +34,8 @@ export class ErroresFilter implements ExceptionFilter {
     }
 
     const detalle = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
-    this.logger.error(`${pedido.method} ${pedido.originalUrl}: ${detalle}`);
+    // Solo la ruta, sin la query: los parámetros de búsqueda pueden tener DNI o correos (igual que PHP)
+    this.logger.error(`${pedido.method} ${pedido.path}: ${detalle}`);
     respuesta
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json(respuestaError('ERROR_INTERNO', 'Ocurrió un error interno. Intentá nuevamente más tarde.'));

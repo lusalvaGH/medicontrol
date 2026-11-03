@@ -11,7 +11,7 @@
 | 1. Backend base | Terminada (03/11/2026) | NestJS 11 con TypeScript 6, configuración por variables de entorno, conexión propia a MariaDB con `mysql2`, formato de respuestas `{ok, data, error}` y `GET /api/health` |
 | 2. Reglas de negocio | Terminada (03/11/2026) | Reglas de turnos, disponibilidad, estados y transiciones, fechas y horarios, validaciones de personas y política de contraseñas en `backend/src/reglas/`. Mismos casos que `tests/turnos_reglas_test.php` y comparación directa con el PHP: 6347 casos, 0 diferencias |
 | 3. Autenticación | Terminada (03/11/2026) | Login con las contraseñas existentes, logout, sesiones con cookie, CSRF, roles, huella de sesión, vencimiento por inactividad y límite de intentos |
-| 4. Usuarios y cuenta | Pendiente | |
+| 4. Usuarios y cuenta | Terminada (03/11/2026) | Cambio de la contraseña propia y Configuración de Recepción: listado, alta, modificación, baja lógica, reactivación y contraseña provisoria. Mismos casos que `tests/usuarios_gestion_test.php` y `tests/cuenta_contrasena_test.php` |
 | 5. Turnos | Pendiente | |
 | 6. Médico y paciente | Pendiente | |
 | 7. Frontend React | Pendiente | |
@@ -119,6 +119,43 @@ Limitaciones:
 - Cambiar `SESSION_SECRET` invalida todas las sesiones abiertas.
 - El token CSRF es aleatorio (32 bytes), se guarda en la sesión, se renueva al iniciar sesión y se compara en tiempo constante. Se exige en todo método distinto de `GET`, `HEAD` y `OPTIONS`, con la cabecera `X-CSRF-Token`.
 - SameSite=Lax supone que el frontend y la API se sirven desde el mismo sitio. Si en producción quedaran en dominios distintos, habrá que revisar la cookie y CORS.
+
+## Usuarios y cuenta (etapa 4)
+
+| Ruta | Acceso | Qué hace |
+|---|---|---|
+| `POST /api/cuenta/contrasena` | Cualquier rol, con CSRF | `{contrasena_actual, contrasena_nueva, contrasena_confirmacion}`. Cambia la contraseña propia |
+| `GET /api/usuarios` | Recepción | `?tipo=personal\|pacientes&buscar=&estado=todos\|activo\|inactivo&pagina=1`. De a 10 |
+| `GET /api/usuarios/:id` | Recepción | Detalle con los datos del perfil |
+| `POST /api/usuarios` | Recepción, con CSRF | Alta de paciente o médico (201) |
+| `PATCH /api/usuarios/:id` | Recepción, con CSRF | Datos personales y de perfil. No cambia rol, estado ni contraseña |
+| `POST /api/usuarios/:id/baja` | Recepción, con CSRF | Baja lógica |
+| `POST /api/usuarios/:id/reactivacion` | Recepción, con CSRF | Reactivación |
+| `POST /api/usuarios/:id/contrasena-provisoria` | Recepción, con CSRF | `{contrasena, contrasena_confirmacion}` |
+
+Los datos de Mi cuenta (nombre, apellido, correo y rol) se leen con `GET /api/auth/me`.
+
+**Igual que en PHP:**
+- Recepción gestiona pacientes y médicos. A otros recepcionistas solo los consulta (`gestionable: false`): no los crea, modifica, da de baja, reactiva ni les asigna contraseña. Tampoco puede hacerlo consigo misma.
+- Las validaciones son las de la etapa 2, con los mismos mensajes y el mismo orden de errores. Correo o DNI repetidos: 409 `DATO_DUPLICADO`, sin distinguir mayúsculas en el correo.
+- El rol nunca sale del formulario, y en una modificación no se puede cambiar (403 `CAMBIO_ROL_NO_PERMITIDO`). Se ignoran el estado, la contraseña y el `id_usuario` enviados.
+- No hay borrado físico: `DELETE` responde 405. La baja es lógica, conserva el historial y cierra la sesión del usuario.
+- No se da de baja a quien tiene turnos pendientes o confirmados futuros, o en curso de cualquier fecha (409 `TURNOS_SIN_RESOLVER`). La hora actual es la de la clínica.
+- El alta y la modificación se guardan en una transacción. Si dos envíos simultáneos usan el mismo correo o DNI, la restricción única de la base deja pasar uno solo.
+- Las contraseñas se guardan con bcrypt de costo 10 y prefijo `$2y$`, como `password_hash` de PHP. La versión PHP las verifica sin cambios.
+- Cambio de contraseña propia:
+  - el usuario sale de la sesión, nunca del pedido;
+  - los espacios de la contraseña se conservan;
+  - una contraseña actual de más de 72 bytes cuenta como incorrecta;
+  - solo se guarda si la contraseña no cambió en el medio y la cuenta sigue activa (si no, 409 `CUENTA_MODIFICADA`);
+  - si sale bien, la sesión actual cambia de identificador y de token CSRF, y las demás sesiones del usuario quedan inválidas.
+- Límite del cambio de contraseña propia: 5 fallos de la contraseña actual en la misma sesión la bloquean 15 minutos (429). Las otras validaciones no cuentan. Un cambio exitoso reinicia el contador. Los pedidos simultáneos de una sesión se atienden de a uno, para que el contador no se pueda esquivar.
+- La contraseña provisoria cierra las sesiones abiertas de ese usuario.
+- Rutas: una ruta inexistente responde 404 y un método no permitido 405, antes de pedir sesión. Los `:id` solo aceptan números.
+
+**Funcionalidades que la versión PHP no tiene y no se agregaron:**
+- Edición de los datos personales propios desde Mi cuenta. En PHP, Mi cuenta solo cambia la contraseña; los datos de pacientes y médicos los edita recepción.
+- Registro público de pacientes (`register.php`). Es un formulario y no una ruta de la API; queda pendiente de definir junto con el frontend (etapa 7).
 
 ## Equivalencias con PHP en las reglas
 

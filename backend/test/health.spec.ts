@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import request from 'supertest';
 import { POOL_DB } from '../src/database/database.module';
 import { crearApp } from './helpers/app-prueba';
@@ -42,6 +42,22 @@ describe('GET /api/health', () => {
     const r = await request(app.getHttpServer()).get('/api/no-existe');
     expect(r.status).toBe(404);
     expect(r.body).toEqual({ ok: false, error: { codigo: 'RUTA_NO_ENCONTRADA', mensaje: 'La ruta solicitada no existe.' } });
+  });
+
+  it('un error inesperado responde 500 genérico y el log no guarda la query (puede tener DNI o correos)', async () => {
+    const espia = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    try {
+      const r = await request(app.getHttpServer()).get('/api/prueba/error-interno?buscar=30111222&email=persona%40ejemplo.test');
+      expect(r.status).toBe(500);
+      expect(r.body).toEqual({ ok: false, error: { codigo: 'ERROR_INTERNO', mensaje: 'Ocurrió un error interno. Intentá nuevamente más tarde.' } });
+      expect(JSON.stringify(r.body)).not.toContain('falla simulada');
+      expect(espia).toHaveBeenCalledTimes(1);
+      const registrado = String(espia.mock.calls[0][0]);
+      expect(registrado).toMatch(/^GET \/api\/prueba\/error-interno: falla simulada de prueba/);
+      expect(registrado).not.toMatch(/30111222|persona|ejemplo|buscar|\?/);
+    } finally {
+      espia.mockRestore();
+    }
   });
 
   it('fuera de /api no hay rutas', async () => {

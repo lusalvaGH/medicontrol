@@ -3,10 +3,13 @@ import type { NextFunction, Request, Response } from 'express';
 import { configurarSesiones } from './auth/sesion.config';
 import { ErroresFilter } from './comun/errores.filter';
 import { RespuestaInterceptor } from './comun/respuesta.interceptor';
+import { controlDeRutas } from './comun/rutas';
+
+const PREFIJO = 'api';
 
 /** Configuración común a la aplicación y a las pruebas, para que se comporten igual. */
 export function configurarApp(app: INestApplication): void {
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix(PREFIJO);
   app.useGlobalInterceptors(new RespuestaInterceptor());
   app.useGlobalFilters(new ErroresFilter());
 
@@ -18,5 +21,7 @@ export function configurarApp(app: INestApplication): void {
     respuesta.setHeader('X-Content-Type-Options', 'nosniff');
     siguiente();
   });
+  // 404 y 405 antes de abrir la sesión, como el Router de PHP
+  express.use(controlDeRutas(app, PREFIJO));
   configurarSesiones(app);
 }

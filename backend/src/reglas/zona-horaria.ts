@@ -58,3 +58,10 @@ export function fechaHoy(ahora: Date = new Date(), zona = TURNOS_ZONA_HORARIA): 
 
   return `${String(p.year).padStart(4, '0')}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
 }
+
+/** Hora actual en la zona de la clínica, como 'HH:MM:SS' (turnosAhora()->format('H:i:s')). */
+export function horaAhora(ahora: Date = new Date(), zona = TURNOS_ZONA_HORARIA): string {
+  const p = partesEnZona(ahora, zona);
+
+  return [p.hour, p.minute, p.second].map((n) => String(n).padStart(2, '0')).join(':');
+}

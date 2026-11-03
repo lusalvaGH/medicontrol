@@ -1,3 +1,4 @@
+import { hash } from 'bcryptjs';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export const ROLES = ['paciente', 'medico', 'recepcionista'] as const;
@@ -22,7 +23,19 @@ declare module 'express-session' {
     rol?: Rol;
     huella_credencial?: string;
     csrf_token?: string;
+    /** Intentos fallidos de cambio de contraseña en esta sesión (como en CuentaController.php). */
+    contrasena_fallos?: number;
+    /** Hasta cuándo (ms desde 1970) está bloqueado el cambio de contraseña en esta sesión. */
+    contrasena_bloqueo_hasta?: number;
   }
+}
+
+/**
+ * Hash bcrypt de costo 10, como password_hash(PASSWORD_DEFAULT) de PHP. Se guarda con el
+ * prefijo $2y$ de PHP: el algoritmo es el mismo que $2b$ y así todas las cuentas quedan iguales.
+ */
+export async function hashContrasena(contrasena: string): Promise<string> {
+  return '$2y$' + (await hash(contrasena, 10)).slice(4);
 }
 
 /**
