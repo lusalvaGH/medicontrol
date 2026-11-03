@@ -1,0 +1,3 @@
+# Apache publica la raíz del repositorio (versión PHP). El backend NestJS no se sirve
+# por Apache: se bloquea todo, incluidos el código, node_modules y los archivos .env.
+Require all denied
