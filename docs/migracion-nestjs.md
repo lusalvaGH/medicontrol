@@ -9,7 +9,7 @@
 |---|---|---|
 | 0. Node.js | Terminada (03/11/2026) | Node.js 24.22.2 LTS portable en la carpeta de herramientas del usuario, con SHA-256 y firma verificadas |
 | 1. Backend base | Terminada (03/11/2026) | NestJS 11 con TypeScript 6, configuración por variables de entorno, conexión propia a MariaDB con `mysql2`, formato de respuestas `{ok, data, error}` y `GET /api/health` |
-| 2. Reglas de negocio | Pendiente | |
+| 2. Reglas de negocio | Terminada (03/11/2026) | Reglas de turnos, disponibilidad, estados y transiciones, fechas y horarios, validaciones de personas y política de contraseñas en `backend/src/reglas/`. Mismos casos que `tests/turnos_reglas_test.php` y comparación directa con el PHP: 6347 casos, 0 diferencias |
 | 3. Autenticación | Pendiente | |
 | 4. Usuarios y cuenta | Pendiente | |
 | 5. Turnos | Pendiente | |
@@ -50,6 +50,17 @@ Las pruebas de integración se niegan a correr si `DB_NAME` no es una base `medi
 - **`multer` fijado en 2.5.0** con `overrides`: corrige una vulnerabilidad alta de la 2.4.0 que trae NestJS 11. La API no recibe archivos.
 - **`backend/.htaccess` con `Require all denied`:** Apache publica la raíz del repositorio; así no expone el código, `node_modules` ni `.env`.
 - **El backend escucha solo en `127.0.0.1`** por defecto.
+
+## Equivalencias con PHP en las reglas
+
+Para que las reglas den el mismo resultado que en PHP, `backend/src/reglas/php.ts` reproduce detalles que cambian el resultado en casos borde:
+
+- `trim()` de PHP quita solo espacio, `\t`, `\n`, `\r`, `\0` y `\x0B`; el de JavaScript quita más caracteres.
+- `mb_strlen()` cuenta caracteres, y `strlen()` bytes en UTF-8: el máximo de la contraseña (72) son bytes.
+- En PCRE, `$` sin el modificador `D` también coincide antes de un `\n` final.
+- `\s` y `\d` con `/u` aceptan espacios y dígitos Unicode. Sin `/u`, solo los ASCII.
+- `filter_var(FILTER_VALIDATE_EMAIL)` se reproduce con la misma expresión de PHP 8.0 y el mismo límite de 320 bytes.
+- Las fechas se calculan en `America/Argentina/Buenos_Aires`, sin depender de la zona del proceso.
 
 ## Seguridad y datos
 
