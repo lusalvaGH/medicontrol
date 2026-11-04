@@ -5,6 +5,7 @@ import { leerConfiguracion } from './config/configuracion';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { SistemaController } from './sistema/sistema.controller';
+import { TurnosModule } from './turnos/turnos.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     DatabaseModule,
     AuthModule,
     UsuariosModule,
+    TurnosModule,
   ],
   controllers: [SistemaController],
 })

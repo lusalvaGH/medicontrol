@@ -12,7 +12,7 @@
 | 2. Reglas de negocio | Terminada (03/11/2026) | Reglas de turnos, disponibilidad, estados y transiciones, fechas y horarios, validaciones de personas y política de contraseñas en `backend/src/reglas/`. Mismos casos que `tests/turnos_reglas_test.php` y comparación directa con el PHP: 6347 casos, 0 diferencias |
 | 3. Autenticación | Terminada (03/11/2026) | Login con las contraseñas existentes, logout, sesiones con cookie, CSRF, roles, huella de sesión, vencimiento por inactividad y límite de intentos |
 | 4. Usuarios y cuenta | Terminada (03/11/2026) | Cambio de la contraseña propia y Configuración de Recepción: listado, alta, modificación, baja lógica, reactivación y contraseña provisoria. Mismos casos que `tests/usuarios_gestion_test.php` y `tests/cuenta_contrasena_test.php` |
-| 5. Turnos | Pendiente | |
+| 5. Turnos | Terminada (04/11/2026) | Agenda, disponibilidad, alta, modificación y cancelación para recepción; agenda del médico y turnos del paciente (solo lectura). Mismos casos que `tests/api_escritura_test.php` y `tests/api_lectura_test.php` |
 | 6. Médico y paciente | Pendiente | |
 | 7. Frontend React | Pendiente | |
 | 8. Pruebas de integración | Pendiente | |
@@ -71,6 +71,8 @@ Las pruebas de integración se niegan a correr si `DB_NAME` no es una base `medi
 - **El logout es `POST` con CSRF.** En PHP es un GET sin protección (pendiente S3 de la auditoría).
 - **Hay límite de intentos de login.** En PHP no existe (pendiente S1): 5 fallos por correo o 20 por IP en 15 minutos bloquean 15 minutos (429 `DEMASIADOS_INTENTOS`). Solo cuentan los errores de credenciales.
 - **El login es un endpoint JSON**, y `csrf-inicio` es nuevo. En PHP el login es un formulario con token oculto.
+- **Una sesión que deja de ser válida se borra en el servidor.** Pasa cuando el usuario se dio de baja, cambió de rol o cambió la contraseña. Las dos versiones responden 401 `SESION_INVALIDA`, pero PHP conserva el archivo de sesión.
+- **Las sesiones de PHP y de NestJS son independientes.** Hay que iniciar sesión en cada versión por separado. Las dos calculan la huella de la contraseña con la misma fórmula y revisan el estado del usuario en cada pedido. Por eso, un cambio de contraseña o una baja hecha en una versión debería cerrar las sesiones de la otra. No se probó de punta a punta.
 
 ### Sesiones en memoria: solución temporal
 
@@ -153,9 +155,52 @@ Los datos de Mi cuenta (nombre, apellido, correo y rol) se leen con `GET /api/au
 - La contraseña provisoria cierra las sesiones abiertas de ese usuario.
 - Rutas: una ruta inexistente responde 404 y un método no permitido 405, antes de pedir sesión. Los `:id` solo aceptan números.
 
+**Diferencias con PHP en la lectura de los pedidos (afectan a toda la API):**
+- **`HEAD`:** en una ruta GET se responde como un `GET`, que es el comportamiento de Express. En PHP responde 405.
+- **Parámetro repetido en la query** (`?tipo=a&tipo=b`): se descarta y se usa el valor por defecto. PHP toma el último.
+- **Cuerpo con formato de formulario** (`application/x-www-form-urlencoded`): NestJS lo acepta, y PHP solo lee JSON. El token CSRF por cabecera sigue siendo obligatorio, así que no abre una vía de ataque desde otros sitios.
+
 **Funcionalidades que la versión PHP no tiene y no se agregaron:**
 - Edición de los datos personales propios desde Mi cuenta. En PHP, Mi cuenta solo cambia la contraseña; los datos de pacientes y médicos los edita recepción.
 - Registro público de pacientes (`register.php`). Es un formulario y no una ruta de la API; queda pendiente de definir junto con el frontend (etapa 7).
+
+## Turnos (etapa 5)
+
+| Ruta | Acceso | Qué hace |
+|---|---|---|
+| `GET /api/turnos?fecha=` o `?desde=&hasta=` | Recepción | Turnos de un día o de un rango de hasta 42 días |
+| `GET /api/turnos/resumen?mes=YYYY-MM` | Recepción | Cantidad por día y por estado |
+| `GET /api/turnos/:id` | Recepción | Detalle |
+| `POST /api/turnos` | Recepción, con CSRF | `{id_paciente, id_medico, fecha, hora, motivo_consulta}`. Crea un turno pendiente (201) |
+| `PATCH /api/turnos/:id` | Recepción, con CSRF | `{fecha, hora, estado}`. Reprograma o cambia el estado |
+| `POST /api/turnos/:id/cancelacion` | Recepción, con CSRF | Cancela |
+| `GET /api/medicos` | Recepción | Médicos activos |
+| `GET /api/pacientes?buscar=&limite=` | Recepción | Pacientes activos (de 1 a 100) |
+| `GET /api/medicos/:id/disponibilidad?fecha=` | Recepción | Los 19 horarios: libre, ocupado o pasado |
+| `GET /api/medico/agenda?fecha=` | Médico | Sus turnos del día (por defecto, hoy), con notas y teléfono del paciente |
+| `GET /api/paciente/turnos` | Paciente | Todos sus turnos, con los datos del médico |
+
+**Igual que en PHP:**
+- Las validaciones, los códigos y los mensajes son los de `TurnosService.php`, con las reglas de la etapa 2 (horarios permitidos, estados, transiciones y fecha futura en la hora de Argentina).
+- Recepción nunca ve las notas médicas.
+- **Reservas simultáneas:** se comprueba que el horario esté libre y, además, la restricción única `uk_medico_fecha_hora` de la base impide dos turnos del mismo médico en la misma fecha y hora. Si dos pedidos pasan la verificación a la vez, el segundo recibe 409 `HORARIO_OCUPADO`. Las dos bases tienen esa restricción.
+- **Ediciones simultáneas:** una modificación o una cancelación solo se guarda si el turno sigue como se leyó (si no, 409 `TURNO_MODIFICADO`).
+- **Horario de un turno cancelado:** sigue ocupado, porque la restricción única también cuenta los cancelados. Liberarlo requiere cambiar el esquema y queda para consultar.
+- **Mes sin turnos:** el resumen devuelve `dias: []`, como `json_encode` de un array vacío en PHP.
+- **Turnos del médico y del paciente:** usan las mismas consultas que `panel/medico.php` y `panel/paciente.php`. El médico o el paciente sale de la sesión, nunca del pedido.
+
+**Diferencias con PHP:**
+- **Turnos del médico y del paciente:** en PHP solo existen como pantallas. Acá son rutas JSON de solo lectura.
+- **Fecha inválida en la agenda del médico:** responde 400; la pantalla PHP la reemplazaba por hoy en silencio.
+- **Hora en los turnos del paciente:** sale como `HH:MM`, igual que en el resto de la API.
+- **Turnos del paciente:** incluyen `id_turno`, que la pantalla no mostraba. Con la misma fecha y hora, se ordenan por `id_turno`.
+- **Médico o paciente sin perfil:** responde 404 `PERFIL_NO_ENCONTRADO`; la pantalla PHP mostraba un mensaje.
+- **Agenda del médico:** no devuelve los totales por estado que calculaba la pantalla. Los calcula el frontend a partir de la lista.
+
+**Pendiente:**
+- Notas médicas: el médico las edita en `panel/medico.php` (etapa 6).
+- Que el paciente pida o cancele sus propios turnos: la versión PHP no lo tiene.
+- Evitar que un paciente tenga dos turnos a la misma hora con médicos distintos: la versión PHP tampoco lo controla.
 
 ## Equivalencias con PHP en las reglas
 
