@@ -14,7 +14,7 @@
 | 4. Usuarios y cuenta | Terminada (03/11/2026) | Cambio de la contraseña propia y Configuración de Recepción: listado, alta, modificación, baja lógica, reactivación y contraseña provisoria. Mismos casos que `tests/usuarios_gestion_test.php` y `tests/cuenta_contrasena_test.php` |
 | 5. Turnos | Terminada (04/11/2026) | Agenda, disponibilidad, alta, modificación y cancelación para recepción; agenda del médico y turnos del paciente (solo lectura). Mismos casos que `tests/api_escritura_test.php` y `tests/api_lectura_test.php` |
 | 6. Médico y paciente | Pendiente | |
-| 7. Frontend React | Pendiente | |
+| 7. Frontend React | En progreso (04/11/2026), sin commit | Circuito de la demo completo: login, calendario de recepción (Día, Semana y Mes, como en PHP), alta y gestión de turnos, pacientes y médicos, alta de paciente, agenda del médico, turnos del paciente y cierre de sesión. Probado de punta a punta contra `medicontrol_demo` |
 | 8. Pruebas de integración | Pendiente | |
 | 9. Docker y documentación | Pendiente | Necesita una computadora con Docker: en el equipo actual no se puede instalar |
 
@@ -201,6 +201,107 @@ Los datos de Mi cuenta (nombre, apellido, correo y rol) se leen con `GET /api/au
 - Notas médicas: el médico las edita en `panel/medico.php` (etapa 6).
 - Que el paciente pida o cancele sus propios turnos: la versión PHP no lo tiene.
 - Evitar que un paciente tenga dos turnos a la misma hora con médicos distintos: la versión PHP tampoco lo controla.
+
+## Frontend React (etapa 7)
+
+React 19 + TypeScript 6 + Vite 8, en `frontend/`. Solo usa las rutas existentes de la API; no hizo falta cambiar el backend.
+
+**Cómo se ejecuta en desarrollo:**
+
+```powershell
+# Backend contra la base de la demo (el valor de la variable de entorno tiene prioridad sobre backend/.env)
+cd backend; $env:DB_NAME = "medicontrol_demo"; npm run build; node dist/main.js
+# En otra terminal, el frontend en http://127.0.0.1:5173
+cd frontend; npm install; npm run dev
+```
+
+**Estructura:**
+
+| Carpeta | Contenido |
+|---|---|
+| `src/api/` | `cliente.ts` (fetch, CSRF y sesión vencida), `servicios.ts` (una función por ruta) y `tipos.ts` (contrato de respuestas) |
+| `src/sesion/` | Estado de la sesión (`GET /api/auth/me` al abrir) y protección de rutas por rol |
+| `src/paginas/` | Pantallas por rol: `recepcion/`, `medico/` y `paciente/`, más el login |
+| `src/calendario/` | Calendario de recepción: vistas Semana y Mes, y las piezas que comparte con la vista Día (barra con totales, filtros y pestañas, tarjeta de turno, ventanas de detalle y de modificación, aviso flotante, fechas y filtros) |
+| `src/componentes/` | Marco con menú, estados de carga y error, campos, etiquetas y grilla de horarios |
+| `src/utilidades/` | Fechas en la zona de la clínica, reglas de estados para la interfaz y carga de datos |
+
+| Pantalla | Rol | Rutas que usa |
+|---|---|---|
+| Login | Todos | `GET /auth/csrf-inicio`, `POST /auth/login` |
+| Agenda: vista Día | Recepción | `GET /turnos?fecha=`, `PATCH /turnos/:id`, `POST /turnos/:id/cancelacion`, `GET /medicos/:id/disponibilidad` para reprogramar |
+| Agenda: vista Semana | Recepción | `GET /turnos?desde=&hasta=` (lunes a domingo), `POST /turnos/:id/cancelacion` |
+| Agenda: vista Mes | Recepción | `GET /turnos/resumen?mes=`, `GET /turnos?fecha=` (turnos del día elegido), `GET /turnos/:id` (detalle), `POST /turnos/:id/cancelacion` |
+| Nuevo turno | Recepción | `GET /medicos`, `GET /medicos/:id/disponibilidad`, `GET /pacientes`, `POST /turnos` |
+| Pacientes y nuevo paciente | Recepción | `GET /usuarios?tipo=pacientes`, `POST /usuarios` (rol paciente) |
+| Médicos y personal | Recepción | `GET /usuarios?tipo=personal` |
+| Mi agenda | Médico | `GET /medico/agenda?fecha=` |
+| Mis turnos | Paciente | `GET /paciente/turnos` |
+| Cerrar sesión | Todos | `POST /auth/logout` |
+
+**Sesión, cookies y CSRF:**
+- En desarrollo, Vite reenvía `/api` al backend: el navegador ve un solo origen. Por eso la cookie `HttpOnly` y `SameSite=Lax` viaja sin configurar CORS. El frontend nunca lee la cookie.
+- Los pedidos que modifican datos llevan `X-CSRF-Token`, en tres momentos:
+  - antes del login, el token sale de `/auth/csrf-inicio`;
+  - después, de `/auth/csrf`;
+  - se descarta al iniciar sesión, al cambiar la contraseña y al cerrar la sesión, porque el backend lo renueva.
+
+  Si el backend responde `CSRF_INVALIDO`, el cliente pide otro token y reintenta una sola vez. El rechazo ocurre antes de procesar el pedido, así que reintentar es seguro.
+- Cualquier 401 `NO_AUTENTICADO` o `SESION_INVALIDA` lleva al login con el aviso "Tu sesión venció". Después de iniciar sesión, se vuelve a la pantalla anterior si es del mismo rol.
+- La protección de rutas por rol es solo de navegación: el permiso real lo controla el backend en cada pedido.
+
+### Calendario de recepción (Día, Semana y Mes)
+
+Reproduce las pantallas `panel/recepcionista.php`, `recepcionista_semana.php`, `recepcionista_mes.php` y `recepcionista_turno_nuevo.php`, con su paleta (azul `#004797`), sus colores por estado y la misma disposición. Las direcciones son `/recepcion/agenda/dia`, `/semana` y `/mes`, con `?fecha=YYYY-MM-DD`. Las pestañas conservan la fecha al cambiar de vista, y `/recepcion/agenda` lleva a la vista Día.
+
+**Común a las tres vistas, como en PHP:**
+- cuatro tarjetas de totales: turnos, confirmados, pendientes y en curso;
+- botón «Registrar turno», que lleva la fecha;
+- pestañas Día, Semana y Mes;
+- aviso flotante después de cada acción;
+- si la fecha de la URL no es válida, se muestra hoy y se avisa.
+
+En Día y Semana también hay un buscador, que ignora acentos y busca por paciente, DNI, médico, especialidad y motivo, y un filtro de especialidad armado con las especialidades de los turnos cargados.
+
+| Vista | Qué hace |
+|---|---|
+| Día | Flechas, «Hoy» y selector de fecha. Muestra los turnos en una línea de tiempo por hora. Al tocar un turno se completa la ficha «Paciente seleccionado»; si no se toca ninguno, queda elegido el primero, como en PHP. Desde la ficha se abre el detalle o «Modificar este turno»: fecha, horarios según la disponibilidad real del médico, solo los estados permitidos, una nota con la regla que aplica y cancelación |
+| Semana | De lunes a domingo, con hoy resaltado. El encabezado de cada día abre la vista Día. Al tocar un turno se abre su detalle, con «Abrir en vista Día» (el turno queda seleccionado) y «Cancelar turno» |
+| Mes | Grilla de lunes a domingo con la cantidad de turnos por día. El color sigue la misma regla que PHP: en curso si hay alguno; pendiente si hay más pendientes que confirmados; cancelado si todos están cancelados; si no, confirmado. Al tocar un día se abre su lista, de ahí el detalle (leído de nuevo del backend) y «Volver al día». También ofrece «Registrar turno este día» |
+| Nuevo turno | Una tarjeta, como `recepcionista_turno_nuevo.php`: búsqueda de paciente activo, médico con la especialidad que se completa sola, fecha desde hoy, horarios según la disponibilidad y motivo. Acepta `?fecha=` y `?id_medico=`. Al registrar, vuelve a la vista Día con el turno seleccionado |
+
+**Diferencias con las pantallas PHP:**
+- **Controles simulados:** no se reprodujeron «Imprimir comprobante», «Todos los clientes» (listaba personas inventadas), la ubicación fija «Consultorio 3» ni el arrastrar y soltar, que anunciaba una reprogramación sin guardarla. Los pacientes reales se consultan en la pantalla Pacientes.
+- **Confirmación de la cancelación:** se pide dentro de la misma ventana, no con el diálogo del navegador.
+- **Ventana «Modificar»:** marca los horarios ocupados y pasados con la disponibilidad real. La de PHP mostraba todos los horarios y dejaba que el backend rechazara.
+- **Filtro de especialidad de la vista Día:** sale de los turnos cargados. En PHP era una lista fija.
+- **Vista Mes:** no tiene buscador. En PHP oscurecía días según el número; la búsqueda por paciente o médico está en Día y Semana.
+- **Vista Semana según el ancho:** desde 1200 px son siete columnas iguales, y la página se ensancha hasta 1440 px para que entren. Entre 768 y 1199 px los días pasan a filas, en orden. En pantallas angostas van uno debajo del otro. En PHP la grilla se desplazaba de costado y las tarjetas podían sobresalir de su columna.
+
+**Reglas copiadas para la interfaz:** las etiquetas y transiciones de estado están en `src/utilidades/turnos.ts`, copiadas de `backend/src/reglas/turnos.reglas.ts` para armar las opciones. El backend vuelve a validar cada cambio. La API todavía no expone esas reglas.
+
+**Pruebas:** `npm test` corre 42 pruebas con Vitest y jsdom. Cubren:
+- el cliente de la API y la protección de rutas;
+- las fechas, el alta de paciente y la separación de turnos del paciente;
+- las fechas y los filtros del calendario, y el color predominante del mes;
+- las vistas Día, Semana y Mes;
+- las ventanas de detalle y de modificación, y el nuevo turno.
+
+El recorrido completo se probó a mano en el navegador, en escritorio y en móvil.
+
+### Base de la demo
+
+La demo usa una base propia, `medicontrol_demo`. Nunca usa `medicontrol_test` ni `medicontrol_db`.
+- Su estructura se copió de `medicontrol_test` sin datos, así que el esquema es el mismo.
+- Los datos ficticios los carga `backend/scripts/sembrar-demo.mjs`. El script solo acepta una base `medicontrol_demo` vacía y no borra nada.
+- La contraseña de las cuentas sale de `DEMO_CLAVE`, que se define en `backend/.env` y no se versiona.
+
+```powershell
+cd backend
+$env:DB_NAME = "medicontrol_demo"; node --env-file=.env scripts/sembrar-demo.mjs
+```
+
+Las cuentas son `recepcion@`, `medico1@` a `medico3@` y `paciente1@` a `paciente5@`, todas con el dominio `demo.medicontrol.test`.
 
 ## Equivalencias con PHP en las reglas
 

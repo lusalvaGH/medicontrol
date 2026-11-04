@@ -1,0 +1,3 @@
+# Apache publica la raíz del repositorio (versión PHP). El frontend React no se sirve por
+# Apache: lo sirve Vite en desarrollo o el proxy en producción. Se bloquea todo.
+Require all denied

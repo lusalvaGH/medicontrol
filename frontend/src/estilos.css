@@ -1,0 +1,434 @@
+/* MEDICONTROL: estilos base. Adaptables de 320 px en adelante; las tablas pasan a tarjetas en pantallas angostas.
+   La paleta es la de las pantallas PHP de recepción (panel/recepcionista*.php). */
+:root {
+  --fondo: #f0f4f9;
+  --superficie: #ffffff;
+  --superficie-suave: #f8fafc;
+  --borde: #e2e8f0;
+  --borde-oscuro: #cbd5e1;
+  --texto: #1e293b;
+  --texto-oscuro: #0f172a;
+  --texto-suave: #64748b;
+  --texto-claro: #94a3b8;
+  --primario: #004797;
+  --primario-oscuro: #003673;
+  --primario-claro: #e0f2fe;
+  --primario-sutil: #e8f1fd;
+  --error-fondo: #fee2e2;
+  --error-texto: #b91c1c;
+  --exito-fondo: #dcfce7;
+  --exito-texto: #15803d;
+  --info-fondo: #e0f2fe;
+  --info-texto: #0369a1;
+  --radio: 8px;
+  --radio-grande: 12px;
+  --sombra-chica: 0 1px 3px rgba(0, 0, 0, 0.03);
+  --sombra-media: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --sombra-grande: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+  color-scheme: light;
+  /* Inter si está instalada (como en PHP); no se descarga de servicios externos */
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--texto);
+  background: var(--fondo);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  line-height: 1.45;
+}
+
+h1,
+h2 {
+  margin: 0 0 0.75rem;
+  line-height: 1.2;
+}
+h1 {
+  font-size: 1.4rem;
+}
+h2 {
+  font-size: 1.1rem;
+}
+
+a {
+  color: var(--primario);
+}
+
+/* ── Marco ── */
+.encabezado {
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+  padding: 0.75rem 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.encabezado-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.marca {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--primario);
+}
+.boton-menu {
+  display: none;
+}
+.menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.5rem;
+}
+.menu a {
+  text-decoration: none;
+  color: var(--texto);
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radio);
+}
+.menu a.active {
+  background: var(--info-fondo);
+  color: var(--primario-oscuro);
+  font-weight: 600;
+}
+.usuario {
+  margin-left: auto;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+.contenido {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+@media (max-width: 700px) {
+  .boton-menu {
+    display: inline-block;
+    background: none;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 0.35rem 0.75rem;
+    font: inherit;
+  }
+  .menu {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .menu.menu-abierto {
+    display: flex;
+  }
+  .usuario {
+    margin-left: 0;
+  }
+}
+
+/* ── Tarjetas, formularios y botones ── */
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.pantalla-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.formulario-login {
+  width: 100%;
+  max-width: 380px;
+  display: grid;
+  gap: 0.75rem;
+}
+.subtitulo {
+  margin: 0;
+  color: var(--texto-suave);
+}
+.campo {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+.campo > span {
+  font-weight: 600;
+}
+.campo-error {
+  color: var(--error-texto);
+  font-size: 0.85rem;
+}
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: #fff;
+  min-width: 0;
+}
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primario);
+  outline-offset: 1px;
+}
+[aria-invalid='true'] {
+  border-color: var(--error-texto);
+}
+.rejilla {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+}
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radio);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.boton-primario {
+  background: var(--primario);
+  color: #fff;
+}
+.boton-primario:hover:not(:disabled) {
+  background: var(--primario-oscuro);
+}
+.boton-secundario {
+  background: var(--superficie);
+  color: var(--texto);
+  border-color: var(--borde);
+}
+.boton-peligro {
+  background: var(--superficie);
+  color: var(--error-texto);
+  border-color: var(--error-texto);
+}
+.boton-chico {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+/* ── Avisos y estados ── */
+.aviso {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radio);
+  margin-bottom: 0.75rem;
+}
+.aviso-error {
+  background: var(--error-fondo);
+  color: var(--error-texto);
+}
+.aviso-exito {
+  background: var(--exito-fondo);
+  color: var(--exito-texto);
+}
+.aviso-info {
+  background: var(--info-fondo);
+  color: var(--info-texto);
+}
+.estado-cargando,
+.vacio {
+  color: var(--texto-suave);
+  padding: 1rem 0;
+}
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--borde);
+  border-top-color: var(--primario);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+  vertical-align: -0.15em;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+/* ── Estados de turno ── */
+.etiqueta {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--borde);
+  color: var(--texto-suave);
+}
+/* Mismos colores que los .badge-* de PHP */
+.etiqueta-pendiente {
+  background: #fef3c7;
+  color: #b45309;
+}
+.etiqueta-confirmado {
+  background: #dcfce7;
+  color: #15803d;
+}
+.etiqueta-en_curso {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.etiqueta-atendido {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.etiqueta-cancelado {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.etiqueta-inactivo {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+/* ── Tablas: en pantallas angostas cada fila es una tarjeta ── */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--superficie);
+}
+.tabla th,
+.tabla td {
+  text-align: left;
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--borde);
+  vertical-align: top;
+}
+.tabla th {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+.secundario {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+@media (max-width: 700px) {
+  .tabla thead {
+    display: none;
+  }
+  .tabla,
+  .tabla tbody,
+  .tabla tr,
+  .tabla td {
+    display: block;
+    width: 100%;
+  }
+  .tabla tr {
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0;
+  }
+  .tabla td {
+    border: none;
+    padding: 0.3rem 0.75rem;
+  }
+  .tabla td[data-etiqueta]::before {
+    content: attr(data-etiqueta);
+    display: block;
+    font-size: 0.75rem;
+    color: var(--texto-suave);
+  }
+}
+
+/* ── Horarios de disponibilidad ── */
+.horarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 0.4rem;
+}
+.horario {
+  font: inherit;
+  padding: 0.45rem 0.3rem;
+  border-radius: var(--radio);
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  cursor: pointer;
+}
+.horario[aria-pressed='true'] {
+  background: var(--primario);
+  color: #fff;
+  border-color: var(--primario);
+}
+.horario:disabled {
+  background: #eef0f4;
+  color: #9aa1ad;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.lista-seleccion {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+.lista-seleccion .boton {
+  width: 100%;
+  justify-content: flex-start;
+  font-weight: 400;
+}
+.notas {
+  white-space: pre-wrap;
+  margin: 0.25rem 0 0;
+}
+
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.paginacion {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.75rem;
+}

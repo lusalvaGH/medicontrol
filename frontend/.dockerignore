@@ -1,0 +1,10 @@
+# Dependencias y compilados se generan dentro de la imagen; los .env nunca se copian.
+node_modules
+dist
+coverage
+.env
+.env.*
+*.log
+.htaccess
+Dockerfile
+.dockerignore
