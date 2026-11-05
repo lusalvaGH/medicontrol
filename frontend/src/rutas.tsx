@@ -6,8 +6,7 @@ import { VistaSemana } from './calendario/VistaSemana';
 import { AgendaMedico } from './paginas/medico/AgendaMedico';
 import { MisTurnos } from './paginas/paciente/MisTurnos';
 import { Agenda } from './paginas/recepcion/Agenda';
-import { Medicos } from './paginas/recepcion/Medicos';
-import { NuevoPaciente } from './paginas/recepcion/NuevoPaciente';
+import { Configuracion } from './paginas/recepcion/Configuracion';
 import { NuevoTurno } from './paginas/recepcion/NuevoTurno';
 import { Pacientes } from './paginas/recepcion/Pacientes';
 
@@ -29,8 +28,7 @@ export const rutasPorRol: { rol: Rol; rutas: { ruta: string; elemento: ReactElem
       { ruta: '/recepcion/agenda/mes', elemento: <VistaMes /> },
       { ruta: '/recepcion/turnos/nuevo', elemento: <NuevoTurno /> },
       { ruta: '/recepcion/pacientes', elemento: <Pacientes /> },
-      { ruta: '/recepcion/pacientes/nuevo', elemento: <NuevoPaciente /> },
-      { ruta: '/recepcion/medicos', elemento: <Medicos /> },
+      { ruta: '/recepcion/configuracion', elemento: <Configuracion /> },
     ],
   },
   { rol: 'medico', rutas: [{ ruta: '/medico/agenda', elemento: <AgendaMedico /> }] },

@@ -201,34 +201,41 @@ describe('Gestión de usuarios (Configuración de Recepción)', () => {
   describe('altas', () => {
     let cuantosAntes: number;
 
-    it('alta de paciente: 201, datos normalizados, rol y estado fijos, contraseña con bcrypt $2y$', async () => {
-      const r = await conToken(agRecep, 'post', '/api/usuarios', valido({ rol: 'paciente', estado: 'inactivo', id_usuario: 1, contrasena_hash: 'x' }));
+    it('recepción no puede dar de alta pacientes (403): se registran solos desde /api/registro', async () => {
+      const antes = await tmp.cantidad();
+      const r = await conToken(agRecep, 'post', '/api/usuarios', valido({ rol: 'paciente' }));
+      expect([r.status, r.body.error.codigo]).toEqual([403, 'SIN_PERMISO']);
+      expect(r.body.error.mensaje).toContain('pantalla de registro');
+      expect(await tmp.cantidad()).toBe(antes);
+    });
+
+    it('alta de médico: 201, datos normalizados, rol y estado fijos, contraseña con bcrypt $2y$', async () => {
+      const r = await conToken(
+        agRecep,
+        'post',
+        '/api/usuarios',
+        valido({ rol: 'medico', estado: 'inactivo', id_usuario: 1, contrasena_hash: 'x', especialidad: 'Dermatología', matricula: 'MN-1234' }),
+      );
       expect(r.status).toBe(201);
       expect(sinDatosSensibles(r.body, PROVISORIA)).toBe(true);
       const id = r.body.data.usuario.id_usuario;
       expect(id).not.toBe(1);
       const fila = await tmp.fila(id);
-      expect(fila).toMatchObject({ rol: 'paciente', estado: 'activo', obra_social: 'Particular', dni: '94111222', email: 'ana.alta' + DOMINIO_TEMPORAL });
+      expect(fila).toMatchObject({ rol: 'medico', estado: 'activo', especialidad: 'Dermatología', matricula: 'MN-1234', dni: '94111222', email: 'ana.alta' + DOMINIO_TEMPORAL });
       expect(String(fila.contrasena).startsWith('$2y$10$')).toBe(true);
       expect(compareSync(PROVISORIA, fila.contrasena)).toBe(true);
       expect(r.body.data.usuario.gestionable).toBe(true);
-    });
-
-    it('el paciente creado puede iniciar sesión con su contraseña', async () => {
-      expect((await login(request.agent(app.getHttpServer()), 'ana.alta' + DOMINIO_TEMPORAL, PROVISORIA)).status).toBe(200);
-    });
-
-    it('alta de médico con especialidad y matrícula', async () => {
-      const r = await conToken(agRecep, 'post', '/api/usuarios', valido({ rol: 'medico', dni: '94111223', email: 'medico.alta' + DOMINIO_TEMPORAL, especialidad: 'Dermatología', matricula: 'MN-1234' }));
-      expect(r.status).toBe(201);
-      expect(await tmp.fila(r.body.data.usuario.id_usuario)).toMatchObject({ rol: 'medico', especialidad: 'Dermatología', matricula: 'MN-1234' });
       cuantosAntes = await tmp.cantidad();
+    });
+
+    it('el médico creado puede iniciar sesión con su contraseña', async () => {
+      expect((await login(request.agent(app.getHttpServer()), 'ana.alta' + DOMINIO_TEMPORAL, PROVISORIA)).status).toBe(200);
     });
 
     it('no se pueden crear recepcionistas (403) y el rol debe ser válido (400)', async () => {
       const r = await conToken(agRecep, 'post', '/api/usuarios', valido({ rol: 'recepcionista', dni: '94111224', email: 'x1' + DOMINIO_TEMPORAL }));
       expect([r.status, r.body.error.codigo]).toEqual([403, 'SIN_PERMISO']);
-      for (const rol of ['administrador', ['medico'], undefined]) {
+      for (const rol of ['administrador', ['medico'], ['paciente'], undefined]) {
         const r2 = await conToken(agRecep, 'post', '/api/usuarios', valido({ rol, dni: '94111225', email: 'x2' + DOMINIO_TEMPORAL }));
         expect([rol, r2.status, r2.body.error.campos?.rol]).toEqual([rol, 400, 'Elegí un tipo de usuario válido.']);
       }
@@ -236,15 +243,12 @@ describe('Gestión de usuarios (Configuración de Recepción)', () => {
 
     it.each([
       ['sin especialidad', { rol: 'medico', dni: '94111227', email: 'x4' + DOMINIO_TEMPORAL }, 'especialidad'],
-      ['DNI con letras', { rol: 'paciente', dni: '12AB3456', email: 'x5' + DOMINIO_TEMPORAL }, 'dni'],
-      ['correo inválido', { rol: 'paciente', dni: '94111228', email: 'no-es-correo' }, 'email'],
-      ['nombre con números', { rol: 'paciente', dni: '94111229', email: 'x6' + DOMINIO_TEMPORAL, nombre: 'Ana99' }, 'nombre'],
-      ['teléfono inválido', { rol: 'paciente', dni: '94111230', email: 'x7' + DOMINIO_TEMPORAL, telefono: 'llamar' }, 'telefono'],
-      ['género fuera de lista', { rol: 'paciente', dni: '94111231', email: 'x8' + DOMINIO_TEMPORAL, genero: 'Administrador' }, 'genero'],
-      ['contraseña corta', { rol: 'paciente', dni: '94111232', email: 'x9' + DOMINIO_TEMPORAL, contrasena: 'Ab1', contrasena_confirmacion: 'Ab1' }, 'contrasena'],
-      ['contraseñas distintas', { rol: 'paciente', dni: '94111233', email: 'x10' + DOMINIO_TEMPORAL, contrasena_confirmacion: 'Otra2026xx' }, 'contrasena_confirmacion'],
+      ['DNI con letras', { rol: 'medico', especialidad: 'Prueba', dni: '12AB3456', email: 'x5' + DOMINIO_TEMPORAL }, 'dni'],
+      ['correo inválido', { rol: 'medico', especialidad: 'Prueba', dni: '94111228', email: 'no-es-correo' }, 'email'],
+      ['nombre con números', { rol: 'medico', especialidad: 'Prueba', dni: '94111229', email: 'x6' + DOMINIO_TEMPORAL, nombre: 'Ana99' }, 'nombre'],
+      ['contraseña corta', { rol: 'medico', especialidad: 'Prueba', dni: '94111232', email: 'x9' + DOMINIO_TEMPORAL, contrasena: 'Ab1', contrasena_confirmacion: 'Ab1' }, 'contrasena'],
+      ['contraseñas distintas', { rol: 'medico', especialidad: 'Prueba', dni: '94111233', email: 'x10' + DOMINIO_TEMPORAL, contrasena_confirmacion: 'Otra2026xx' }, 'contrasena_confirmacion'],
       ['matrícula inválida', { rol: 'medico', dni: '94111234', email: 'x11' + DOMINIO_TEMPORAL, especialidad: 'Prueba', matricula: '<script>' }, 'matricula'],
-      ['fecha de nacimiento futura', { rol: 'paciente', dni: '94111236', email: 'x13' + DOMINIO_TEMPORAL, fecha_nacimiento: '2999-01-01' }, 'fecha_nacimiento'],
     ])('alta con %s: 400 marcando el campo', async (_nombre, extra, campo) => {
       const r = await conToken(agRecep, 'post', '/api/usuarios', valido(extra));
       expect(r.status).toBe(400);
@@ -253,14 +257,14 @@ describe('Gestión de usuarios (Configuración de Recepción)', () => {
     });
 
     it('correo o DNI duplicados: 409 marcando el campo, sin distinguir mayúsculas', async () => {
-      const r = await conToken(agRecep, 'post', '/api/usuarios', valido({ rol: 'paciente', dni: '94111235', email: 'ANA.ALTA' + DOMINIO_TEMPORAL }));
+      const r = await conToken(agRecep, 'post', '/api/usuarios', valido({ rol: 'medico', especialidad: 'Prueba', dni: '94111235', email: 'ANA.ALTA' + DOMINIO_TEMPORAL }));
       expect([r.status, r.body.error.codigo, r.body.error.campos]).toEqual([409, 'DATO_DUPLICADO', { email: 'Ese correo ya está registrado.' }]);
       const r2 = await conToken(agRecep, 'post', '/api/usuarios', valido({ rol: 'medico', dni: '94111222', email: 'x12' + DOMINIO_TEMPORAL, especialidad: 'Prueba' }));
       expect([r2.status, r2.body.error.campos]).toEqual([409, { dni: 'Ese DNI ya está registrado.' }]);
     });
 
     it('dos altas simultáneas con el mismo correo crean un solo usuario', async () => {
-      const datos = valido({ rol: 'paciente', dni: '94111240', email: 'simultaneo' + DOMINIO_TEMPORAL });
+      const datos = valido({ rol: 'medico', especialidad: 'Prueba', dni: '94111240', email: 'simultaneo' + DOMINIO_TEMPORAL });
       const respuestas = await Promise.all([1, 2, 3].map((i) => conToken(agRecep, 'post', '/api/usuarios', { ...datos, dni: `9411124${i}` })));
       expect(respuestas.map((r) => r.status).sort()).toEqual([201, 409, 409]);
       const [filas] = await pool.query<any[]>('SELECT COUNT(*) AS n FROM usuarios WHERE email = ?', ['simultaneo' + DOMINIO_TEMPORAL]);

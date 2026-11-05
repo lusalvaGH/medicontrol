@@ -14,7 +14,7 @@
 | 4. Usuarios y cuenta | Terminada (03/11/2026) | Cambio de la contraseña propia y Configuración de Recepción: listado, alta, modificación, baja lógica, reactivación y contraseña provisoria. Mismos casos que `tests/usuarios_gestion_test.php` y `tests/cuenta_contrasena_test.php` |
 | 5. Turnos | Terminada (04/11/2026) | Agenda, disponibilidad, alta, modificación y cancelación para recepción; agenda del médico y turnos del paciente (solo lectura). Mismos casos que `tests/api_escritura_test.php` y `tests/api_lectura_test.php` |
 | 6. Médico y paciente | Pendiente | |
-| 7. Frontend React | En progreso (04/11/2026), sin commit | Circuito de la demo completo: login, calendario de recepción (Día, Semana y Mes, como en PHP), alta y gestión de turnos, pacientes y médicos, alta de paciente, agenda del médico, turnos del paciente y cierre de sesión. Probado de punta a punta contra `medicontrol_demo` |
+| 7. Frontend React | En progreso (04/11/2026), sin commit | Circuito de la demo completo: login, calendario de recepción (Día, Semana y Mes, como en PHP), alta y gestión de turnos, pacientes y médicos, registro público de pacientes, agenda del médico, turnos del paciente y cierre de sesión. Probado de punta a punta contra `medicontrol_demo` |
 | 8. Pruebas de integración | Pendiente | |
 | 9. Docker y documentación | Pendiente | Necesita una computadora con Docker: en el equipo actual no se puede instalar |
 
@@ -129,7 +129,7 @@ Limitaciones:
 | `POST /api/cuenta/contrasena` | Cualquier rol, con CSRF | `{contrasena_actual, contrasena_nueva, contrasena_confirmacion}`. Cambia la contraseña propia |
 | `GET /api/usuarios` | Recepción | `?tipo=personal\|pacientes&buscar=&estado=todos\|activo\|inactivo&pagina=1`. De a 10 |
 | `GET /api/usuarios/:id` | Recepción | Detalle con los datos del perfil |
-| `POST /api/usuarios` | Recepción, con CSRF | Alta de paciente o médico (201) |
+| `POST /api/usuarios` | Recepción, con CSRF | Alta de médico (201). Con `rol: paciente` responde 403 `SIN_PERMISO`: los pacientes se registran solos con `POST /api/registro` |
 | `PATCH /api/usuarios/:id` | Recepción, con CSRF | Datos personales y de perfil. No cambia rol, estado ni contraseña |
 | `POST /api/usuarios/:id/baja` | Recepción, con CSRF | Baja lógica |
 | `POST /api/usuarios/:id/reactivacion` | Recepción, con CSRF | Reactivación |
@@ -138,7 +138,7 @@ Limitaciones:
 Los datos de Mi cuenta (nombre, apellido, correo y rol) se leen con `GET /api/auth/me`.
 
 **Igual que en PHP:**
-- Recepción gestiona pacientes y médicos. A otros recepcionistas solo los consulta (`gestionable: false`): no los crea, modifica, da de baja, reactiva ni les asigna contraseña. Tampoco puede hacerlo consigo misma.
+- Recepción gestiona pacientes y médicos, pero **no crea pacientes**: cada paciente crea su cuenta en el registro público y recepción lo busca por DNI. Esto es una diferencia con PHP, donde Configuración sí da de alta pacientes. A otros recepcionistas solo los consulta (`gestionable: false`): no los crea, modifica, da de baja, reactiva ni les asigna contraseña. Tampoco puede hacerlo consigo misma.
 - Las validaciones son las de la etapa 2, con los mismos mensajes y el mismo orden de errores. Correo o DNI repetidos: 409 `DATO_DUPLICADO`, sin distinguir mayúsculas en el correo.
 - El rol nunca sale del formulario, y en una modificación no se puede cambiar (403 `CAMBIO_ROL_NO_PERMITIDO`). Se ignoran el estado, la contraseña y el `id_usuario` enviados.
 - No hay borrado físico: `DELETE` responde 405. La baja es lógica, conserva el historial y cierra la sesión del usuario.
@@ -162,7 +162,21 @@ Los datos de Mi cuenta (nombre, apellido, correo y rol) se leen con `GET /api/au
 
 **Funcionalidades que la versión PHP no tiene y no se agregaron:**
 - Edición de los datos personales propios desde Mi cuenta. En PHP, Mi cuenta solo cambia la contraseña; los datos de pacientes y médicos los edita recepción.
-- Registro público de pacientes (`register.php`). Es un formulario y no una ruta de la API; queda pendiente de definir junto con el frontend (etapa 7).
+
+### Registro público de pacientes
+
+| Ruta | Acceso | Qué hace |
+|---|---|---|
+| `POST /api/registro` | Pública, con el CSRF de `/auth/csrf-inicio` | Los campos de `register.php`. Crea una cuenta de paciente activa con su perfil (201 `{registrado: true}`) |
+
+**Igual que en PHP (`register.php` y `RegistroPacientesService.php`):**
+- El rol es siempre `paciente`: se ignoran el `rol` y el `estado` enviados. Médicos y recepcionistas no se pueden registrar.
+- Las validaciones son las de persona, perfil de paciente y contraseña de la etapa 2, con 400 `DATOS_INVALIDOS` y el error de cada campo.
+- Correo o DNI ya registrados: 409 `REGISTRO_NO_DISPONIBLE` con un mensaje único que no revela cuál de los dos existe. Dos envíos simultáneos los frena la restricción única.
+- El token CSRF se renueva después de cada envío, así que el mismo formulario no se puede reenviar.
+- El usuario y su perfil se guardan en una transacción, con la contraseña en formato `$2y$`.
+
+**Diferencias:** es una ruta JSON y no un formulario, y la respuesta no devuelve los datos de la cuenta. Como en PHP, no tiene límite de intentos.
 
 ## Turnos (etapa 5)
 
@@ -229,14 +243,16 @@ cd frontend; npm install; npm run dev
 | Pantalla | Rol | Rutas que usa |
 |---|---|---|
 | Login | Todos | `GET /auth/csrf-inicio`, `POST /auth/login` |
+| Registro de paciente (`/registro`) | Sin sesión | `GET /auth/csrf-inicio`, `POST /registro` |
 | Agenda: vista Día | Recepción | `GET /turnos?fecha=`, `PATCH /turnos/:id`, `POST /turnos/:id/cancelacion`, `GET /medicos/:id/disponibilidad` para reprogramar |
 | Agenda: vista Semana | Recepción | `GET /turnos?desde=&hasta=` (lunes a domingo), `POST /turnos/:id/cancelacion` |
 | Agenda: vista Mes | Recepción | `GET /turnos/resumen?mes=`, `GET /turnos?fecha=` (turnos del día elegido), `GET /turnos/:id` (detalle), `POST /turnos/:id/cancelacion` |
 | Nuevo turno | Recepción | `GET /medicos`, `GET /medicos/:id/disponibilidad`, `GET /pacientes`, `POST /turnos` |
-| Pacientes y nuevo paciente | Recepción | `GET /usuarios?tipo=pacientes`, `POST /usuarios` (rol paciente) |
-| Médicos y personal | Recepción | `GET /usuarios?tipo=personal` |
+| Pacientes: búsqueda por DNI, nombre o correo, y «Registrar turno» | Recepción | `GET /usuarios?tipo=pacientes`. «Registrar turno» abre Nuevo turno con `?dni=` y deja elegido al paciente. Recepción no crea pacientes |
 | Mi agenda | Médico | `GET /medico/agenda?fecha=` |
 | Mis turnos | Paciente | `GET /paciente/turnos` |
+| Configuración del Sistema (`recepcionista_configuracion.php`) | Recepción | `POST /cuenta/contrasena`; `GET /usuarios`, `GET /usuarios/:id`, `POST /usuarios` (solo médicos), `PATCH /usuarios/:id`, `POST /usuarios/:id/baja`, `/reactivacion` y `/contrasena-provisoria`. Sin «Agregar paciente»: los pacientes se registran solos |
+| Mi cuenta (`mi_cuenta.php`) | Todos | `POST /cuenta/contrasena` |
 | Cerrar sesión | Todos | `POST /auth/logout` |
 
 **Sesión, cookies y CSRF:**
@@ -280,9 +296,9 @@ En Día y Semana también hay un buscador, que ignora acentos y busca por pacien
 
 **Reglas copiadas para la interfaz:** las etiquetas y transiciones de estado están en `src/utilidades/turnos.ts`, copiadas de `backend/src/reglas/turnos.reglas.ts` para armar las opciones. El backend vuelve a validar cada cambio. La API todavía no expone esas reglas.
 
-**Pruebas:** `npm test` corre 42 pruebas con Vitest y jsdom. Cubren:
+**Pruebas:** `npm test` corre 63 pruebas con Vitest y jsdom. Cubren:
 - el cliente de la API y la protección de rutas;
-- las fechas, el alta de paciente y la separación de turnos del paciente;
+- las fechas, el registro público, la búsqueda de pacientes por DNI y la separación de turnos del paciente;
 - las fechas y los filtros del calendario, y el color predominante del mes;
 - las vistas Día, Semana y Mes;
 - las ventanas de detalle y de modificación, y el nuevo turno.

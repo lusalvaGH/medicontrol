@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react';
 
 /** Etiqueta, control y mensaje de error del backend para ese campo (error.campos[nombre]). */
-export function Campo({ etiqueta, error, children }: { etiqueta: string; error?: string; children: (props: { id: string; 'aria-invalid': boolean; 'aria-describedby'?: string }) => ReactNode }) {
+export function Campo({ etiqueta, error, children }: { etiqueta: ReactNode; error?: string; children: (props: { id: string; 'aria-invalid': boolean; 'aria-describedby'?: string }) => ReactNode }) {
   const id = useId();
   const idError = `${id}-error`;
 

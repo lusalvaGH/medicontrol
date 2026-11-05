@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Cargando, MensajeError } from '../componentes/Estados';
 import { INICIO_POR_ROL, useSesion } from '../sesion/SesionContexto';
 
@@ -7,7 +7,8 @@ export function Login() {
   const { sesion, iniciarSesion } = useSesion();
   const navegar = useNavigate();
   const ubicacion = useLocation();
-  const desde = (ubicacion.state as { desde?: string } | null)?.desde;
+  const estado = ubicacion.state as { desde?: string; registrado?: boolean } | null;
+  const desde = estado?.desde;
 
   const [email, setEmail] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -50,6 +51,11 @@ export function Login() {
             Tu sesión venció o ya no es válida. Iniciá sesión nuevamente.
           </div>
         )}
+        {estado?.registrado && error === null && (
+          <div className="aviso aviso-exito" role="status">
+            Tu cuenta se creó correctamente. Ya podés iniciar sesión.
+          </div>
+        )}
         {error !== null && <MensajeError error={error} />}
 
         <label className="campo">
@@ -63,6 +69,9 @@ export function Login() {
         <button type="submit" className="boton boton-primario" disabled={enviando}>
           {enviando ? 'Ingresando…' : 'Ingresar'}
         </button>
+        <p className="enlace-cambio">
+          ¿Sos paciente y no tenés una cuenta? <Link to="/registro">Registrarse</Link>
+        </p>
       </form>
     </main>
   );

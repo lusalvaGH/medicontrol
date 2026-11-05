@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { usuarios } from '../../api/servicios';
-import { Aviso, Cargando, MensajeError, Vacio } from '../../componentes/Estados';
+import { Cargando, MensajeError, Vacio } from '../../componentes/Estados';
+import { textoDeBusqueda } from '../../utilidades/busqueda';
 import { useDatos } from '../../utilidades/useDatos';
 
-/** Pacientes registrados (GET /api/usuarios?tipo=pacientes), con búsqueda, filtro de estado y páginas de 10. */
+/**
+ * Pacientes registrados (GET /api/usuarios?tipo=pacientes), con búsqueda por DNI, nombre o correo,
+ * filtro de estado y páginas de 10. Recepción no crea pacientes: cada paciente crea su cuenta en la
+ * pantalla de registro. Desde acá se elige al paciente para registrarle un turno.
+ */
 export function Pacientes() {
-  const aviso = (useLocation().state as { aviso?: string } | null)?.aviso;
   const [buscar, setBuscar] = useState('');
   const [consulta, setConsulta] = useState('');
   const [estado, setEstado] = useState<'todos' | 'activo' | 'inactivo'>('activo');
@@ -15,13 +19,8 @@ export function Pacientes() {
 
   return (
     <section>
-      <div className="fila" style={{ justifyContent: 'space-between' }}>
-        <h1>Pacientes</h1>
-        <Link to="/recepcion/pacientes/nuevo" className="boton boton-primario">
-          Nuevo paciente
-        </Link>
-      </div>
-      {aviso && <Aviso>{aviso}</Aviso>}
+      <h1>Pacientes</h1>
+      <p className="secundario">Los pacientes crean su cuenta desde la pantalla de registro. Buscalos por su DNI para registrarles un turno.</p>
 
       <form
         className="tarjeta fila"
@@ -29,12 +28,12 @@ export function Pacientes() {
         onSubmit={(e) => {
           e.preventDefault();
           setPagina(1);
-          setConsulta(buscar.trim());
+          setConsulta(textoDeBusqueda(buscar));
         }}
       >
         <label className="campo" style={{ flex: '1 1 220px' }}>
-          <span>Buscar por nombre, DNI o correo</span>
-          <input value={buscar} maxLength={80} onChange={(e) => setBuscar(e.target.value)} />
+          <span>Buscar por DNI, nombre o correo</span>
+          <input value={buscar} maxLength={80} placeholder="Ej. 38123456" onChange={(e) => setBuscar(e.target.value)} />
         </label>
         <label className="campo">
           <span>Estado</span>
@@ -57,7 +56,9 @@ export function Pacientes() {
 
       {cargando && <Cargando />}
       {!cargando && error !== null && <MensajeError error={error} alReintentar={recargar} />}
-      {!cargando && datos && datos.usuarios.length === 0 && <Vacio>No hay pacientes que coincidan con la búsqueda.</Vacio>}
+      {!cargando && datos && datos.usuarios.length === 0 && (
+        <Vacio>{consulta ? 'No se encontró ningún paciente registrado con esos datos.' : 'Todavía no hay pacientes registrados.'}</Vacio>
+      )}
       {!cargando && datos && datos.usuarios.length > 0 && (
         <>
           <p className="secundario">{datos.total} paciente(s)</p>
@@ -70,6 +71,7 @@ export function Pacientes() {
                 <th>Teléfono</th>
                 <th>Obra social</th>
                 <th>Estado</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -84,6 +86,18 @@ export function Pacientes() {
                   <td data-etiqueta="Obra social">{u.obra_social ?? '—'}</td>
                   <td data-etiqueta="Estado">
                     <span className={`etiqueta ${u.estado === 'activo' ? 'etiqueta-confirmado' : 'etiqueta-inactivo'}`}>{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</span>
+                  </td>
+                  <td data-etiqueta="Acciones">
+                    {/* Solo los pacientes activos pueden tener turnos nuevos (GET /api/pacientes lista solo activos) */}
+                    {u.estado === 'activo' && (
+                      <Link
+                        to={`/recepcion/turnos/nuevo?dni=${encodeURIComponent(u.dni)}`}
+                        className="boton boton-secundario boton-chico"
+                        aria-label={`Registrar turno para ${u.nombre} ${u.apellido}`}
+                      >
+                        Registrar turno
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}

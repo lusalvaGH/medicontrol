@@ -229,6 +229,41 @@ describe('Nuevo turno', () => {
     expect(screen.getByRole('button', { name: '✓ Registrar turno' })).toHaveProperty('disabled', true);
   });
 
+  it('no ofrece registrar pacientes y avisa cuando el DNI no corresponde a ningún paciente', async () => {
+    medicos();
+    const buscar = vi.spyOn(catalogo, 'pacientes').mockResolvedValue({ pacientes: [] });
+    montarNuevo();
+    expect(screen.queryByRole('link', { name: /Registrar paciente/ })).toBeNull();
+    fireEvent.change(screen.getByLabelText('Buscar por nombre, apellido o DNI'), { target: { value: '38.123.456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(await screen.findByText(/No se encontró ningún paciente registrado/)).toBeTruthy();
+    expect(buscar).toHaveBeenLastCalledWith('38123456');
+  });
+
+  it('con ?dni= busca al paciente y lo deja elegido si el DNI coincide', async () => {
+    medicos();
+    const buscar = vi
+      .spyOn(catalogo, 'pacientes')
+      .mockResolvedValue({ pacientes: [{ id_paciente: 3, nombre: 'Ana', apellido: 'Paz', dni: '30111222', obra_social: 'OSDE' }] });
+    montarNuevo('/recepcion/turnos/nuevo?fecha=2030-06-14&dni=30111222');
+
+    expect(await screen.findByText(/DNI 30111222 · OSDE/)).toBeTruthy();
+    expect(buscar).toHaveBeenCalledWith('30111222');
+    expect(screen.getByRole('button', { name: 'Cambiar' })).toBeTruthy();
+  });
+
+  it('una búsqueda por nombre no elige sola al paciente', async () => {
+    medicos();
+    vi.spyOn(catalogo, 'pacientes').mockResolvedValue({ pacientes: [{ id_paciente: 3, nombre: 'Ana', apellido: 'Paz', dni: '30111222', obra_social: null }] });
+    montarNuevo();
+    fireEvent.change(screen.getByLabelText('Buscar por nombre, apellido o DNI'), { target: { value: 'Paz' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(await screen.findByRole('button', { name: /Paz, Ana/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Cambiar' })).toBeNull();
+  });
+
   it('acepta el médico preelegido por la URL', async () => {
     medicos();
     const disponibilidad = vi.spyOn(catalogo, 'disponibilidad').mockResolvedValue({ id_medico: 2, fecha: '2030-06-14', horarios: horarios(['10:30']) });

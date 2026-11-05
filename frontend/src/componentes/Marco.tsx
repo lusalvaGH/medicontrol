@@ -9,10 +9,18 @@ const MENU: Record<Rol, { a: string; texto: string; conSubrutas?: boolean }[]> =
     { a: '/recepcion/agenda', texto: 'Agenda', conSubrutas: true },
     { a: '/recepcion/turnos/nuevo', texto: 'Nuevo turno' },
     { a: '/recepcion/pacientes', texto: 'Pacientes' },
-    { a: '/recepcion/medicos', texto: 'Médicos' },
+    { a: '/recepcion/configuracion', texto: 'Configuración' },
+    { a: '/mi-cuenta', texto: 'Mi cuenta' },
   ],
-  medico: [{ a: '/medico/agenda', texto: 'Mi agenda' }],
-  paciente: [{ a: '/paciente/turnos', texto: 'Mis turnos' }],
+  // Como en PHP, médico y paciente tienen «Mi cuenta» para cambiar su contraseña
+  medico: [
+    { a: '/medico/agenda', texto: 'Mi agenda' },
+    { a: '/mi-cuenta', texto: 'Mi cuenta' },
+  ],
+  paciente: [
+    { a: '/paciente/turnos', texto: 'Mis turnos' },
+    { a: '/mi-cuenta', texto: 'Mi cuenta' },
+  ],
 };
 
 const NOMBRE_ROL: Record<Rol, string> = { recepcionista: 'Recepción', medico: 'Médico', paciente: 'Paciente' };

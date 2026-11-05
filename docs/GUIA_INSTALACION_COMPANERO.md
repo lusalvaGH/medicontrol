@@ -238,7 +238,7 @@ derecha.
 
 1. Al entrar se ve la **Agenda** del día, con las pestañas **Día**, **Semana** y **Mes**.
 2. Tocá **Pacientes**: aparece Mateo Fernández.
-3. Tocá **Médicos**: aparecen Alejandro Rossi y Elena Martínez.
+3. Tocá **Configuración**: en la pestaña **Personal** aparecen Alejandro Rossi y Elena Martínez.
 4. Registrá un turno:
    1. Tocá **Nuevo turno**.
    2. En "Buscar paciente" escribí `fernandez`, tocá **Buscar** y elegí a **Mateo Fernández**.

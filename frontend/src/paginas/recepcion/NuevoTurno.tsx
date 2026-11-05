@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ErrorApi } from '../../api/cliente';
 import { catalogo, turnos } from '../../api/servicios';
@@ -7,13 +7,15 @@ import { esFechaValida } from '../../calendario/fechas';
 import { Cargando, MensajeError, Vacio } from '../../componentes/Estados';
 import { GrillaHorarios } from '../../componentes/Turnos';
 import { fechaLegible, hoyEnClinica } from '../../utilidades/fechas';
+import { textoDeBusqueda } from '../../utilidades/busqueda';
 import { useDatos } from '../../utilidades/useDatos';
 
 /**
  * «Registrar nuevo turno» (recepcionista_turno_nuevo.php): paciente activo (GET /api/pacientes),
  * médico con su especialidad, fecha y horario libre (GET /api/medicos/:id/disponibilidad) y
  * motivo. Lo guarda POST /api/turnos y vuelve a la vista Día de esa fecha.
- * Acepta ?fecha= y ?id_medico= (por ejemplo, desde «Registrar turno este día» de la vista Mes).
+ * Acepta ?fecha= y ?id_medico= (por ejemplo, desde «Registrar turno este día» de la vista Mes) y
+ * ?dni= (desde el listado de Pacientes). Recepción no crea pacientes: se registran solos.
  */
 export function NuevoTurno() {
   const navegar = useNavigate();
@@ -25,8 +27,10 @@ export function NuevoTurno() {
   const [fecha, setFecha] = useState(esFechaValida(fechaInicial) && fechaInicial >= hoy ? fechaInicial : hoy);
   const [hora, setHora] = useState('');
   const [paciente, setPaciente] = useState<PacienteCatalogo | null>(null);
-  const [buscar, setBuscar] = useState('');
-  const [consulta, setConsulta] = useState<string | null>(null);
+  // ?dni= llega desde «Registrar turno» del listado de Pacientes: se busca ese paciente al abrir
+  const dniInicial = textoDeBusqueda(parametros.get('dni') ?? '');
+  const [buscar, setBuscar] = useState(dniInicial);
+  const [consulta, setConsulta] = useState<string | null>(dniInicial || null);
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -35,6 +39,14 @@ export function NuevoTurno() {
   const medicos = useDatos(() => catalogo.medicos(), []);
   const disponibilidad = useDatos(() => (idMedico ? catalogo.disponibilidad(idMedico, fecha) : Promise.resolve(null)), [idMedico, fecha]);
   const pacientes = useDatos(() => (consulta === null ? Promise.resolve(null) : catalogo.pacientes(consulta)), [consulta]);
+  // Si se buscó un DNI completo y hay un solo paciente con ese DNI, queda elegido
+  const resultados = pacientes.cargando ? null : pacientes.datos?.pacientes;
+  useEffect(() => {
+    const exactos = consulta && /^\d+$/.test(consulta) ? (resultados ?? []).filter((p) => p.dni === consulta) : [];
+    if (exactos.length === 1) {
+      setPaciente(exactos[0]);
+    }
+  }, [resultados, consulta]);
   const medico = medicos.datos?.medicos.find((m) => m.id_medico === idMedico);
   const volver = `/recepcion/agenda/dia?fecha=${fecha}`;
 
@@ -108,20 +120,19 @@ export function NuevoTurno() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      setConsulta(buscar.trim());
+                      setConsulta(textoDeBusqueda(buscar));
                     }
                   }}
                 />
-                <button type="button" className="boton boton-secundario" onClick={() => setConsulta(buscar.trim())}>
+                <button type="button" className="boton boton-secundario" onClick={() => setConsulta(textoDeBusqueda(buscar))}>
                   Buscar
                 </button>
-                <Link to="/recepcion/pacientes/nuevo" className="boton boton-secundario">
-                  Registrar paciente
-                </Link>
               </div>
               {consulta !== null && pacientes.cargando && <Cargando texto="Buscando pacientes…" />}
               {pacientes.error !== null && <MensajeError error={pacientes.error} alReintentar={pacientes.recargar} />}
-              {pacientes.datos && !pacientes.cargando && pacientes.datos.pacientes.length === 0 && <Vacio>No se encontraron pacientes activos.</Vacio>}
+              {pacientes.datos && !pacientes.cargando && pacientes.datos.pacientes.length === 0 && (
+                <Vacio>No se encontró ningún paciente registrado. El paciente tiene que crear su cuenta desde la pantalla de registro.</Vacio>
+              )}
               {pacientes.datos && !pacientes.cargando && pacientes.datos.pacientes.length > 0 && (
                 <ul className="resultados-pacientes">
                   {pacientes.datos.pacientes.map((p) => (

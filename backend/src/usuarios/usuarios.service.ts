@@ -35,6 +35,10 @@ function esDuplicado(error: unknown): boolean {
 
 const duplicadoConcurrente = (): ApiException => new ApiException(409, 'DATO_DUPLICADO', 'El correo o el DNI ya pertenecen a otro usuario.');
 
+/** Mensaje único del registro público para correo o DNI ya registrados: no revela cuál de los dos existe (RegistroPacientesService::MENSAJE_DUPLICADO). */
+export const MENSAJE_REGISTRO_DUPLICADO = 'No se pudo crear la cuenta con esos datos. Si ya tenés una cuenta, iniciá sesión.';
+const registroDuplicado = (): ApiException => new ApiException(409, 'REGISTRO_NO_DISPONIBLE', MENSAJE_REGISTRO_DUPLICADO);
+
 /**
  * Gestión de usuarios desde Configuración de Recepción (migrada de UsuariosService.php).
  * Recepción gestiona pacientes y médicos, y solo consulta a otros recepcionistas.
@@ -75,35 +79,57 @@ export class UsuariosService {
     return presentar(await this.exigirUsuario(idUsuario));
   }
 
+  /**
+   * Alta desde Configuración de Recepción: solo médicos. Los pacientes crean su propia cuenta en el
+   * registro público (registrarPaciente) y recepción los busca por DNI para gestionar sus turnos.
+   */
   async crear(entrada: Entrada, ahora = new Date(this.reloj())): Promise<UsuarioPresentado> {
     const rol = typeof entrada.rol === 'string' ? entrada.rol : '';
     if (rol === 'recepcionista') {
       throw new ApiException(403, 'SIN_PERMISO', 'Recepción no puede crear otros recepcionistas.');
     }
-    if (!esGestionable(rol)) {
-      throw new ApiException(400, 'DATOS_INVALIDOS', 'Elegí si vas a registrar un paciente o un médico.', { rol: 'Elegí un tipo de usuario válido.' });
+    if (rol === 'paciente') {
+      throw new ApiException(403, 'SIN_PERMISO', 'Los pacientes crean su cuenta desde la pantalla de registro. Buscalos por DNI en Pacientes.');
+    }
+    if (rol !== 'medico') {
+      throw new ApiException(400, 'DATOS_INVALIDOS', 'Elegí un tipo de usuario válido.', { rol: 'Elegí un tipo de usuario válido.' });
     }
 
     const datos = validar(rol, entrada, fechaHoy(ahora), true);
     await this.exigirSinDuplicados(datos);
-    // Igual que RegistroPacientesService::registrar, que vuelve a comprobar antes de crear el paciente
-    if (rol === 'paciente' && (await this.usuarios.datosDuplicados(datos.email, datos.dni)).length > 0) {
-      throw duplicadoConcurrente();
-    }
 
     const hash = await hashContrasena(datos.contrasena as string);
     const idUsuario = await this.enTransaccion(async (db) => {
       const id = await this.usuarios.insertar(db, datos, rol, hash);
-      if (rol === 'paciente') {
-        await this.usuarios.insertarPerfilPaciente(db, id, datos as DatosPerfilPaciente);
-      } else {
-        await this.usuarios.insertarPerfilMedico(db, id, datos as DatosPerfilMedico);
-      }
+      await this.usuarios.insertarPerfilMedico(db, id, datos as DatosPerfilMedico);
 
       return id;
     });
 
     return this.detalle(idUsuario);
+  }
+
+  /**
+   * Registro público de pacientes (register.php y RegistroPacientesService.php). El rol es siempre
+   * "paciente": nunca se toma del formulario. Las validaciones son las mismas del alta por recepción.
+   * Si el correo o el DNI ya existen responde un mensaje genérico, sin indicar cuál de los dos.
+   */
+  async registrarPaciente(entrada: Entrada, ahora = new Date(this.reloj())): Promise<void> {
+    const datos = validar('paciente', entrada, fechaHoy(ahora), true);
+    if ((await this.usuarios.datosDuplicados(datos.email, datos.dni)).length > 0) {
+      throw registroDuplicado();
+    }
+
+    const hash = await hashContrasena(datos.contrasena as string);
+    try {
+      await this.enTransaccion(async (db) => {
+        const id = await this.usuarios.insertar(db, datos, 'paciente', hash);
+        await this.usuarios.insertarPerfilPaciente(db, id, datos as DatosPerfilPaciente);
+      });
+    } catch (error) {
+      // Dos envíos simultáneos con el mismo correo o DNI: la restricción única deja pasar uno solo
+      throw error instanceof ApiException && error.codigo === 'DATO_DUPLICADO' ? registroDuplicado() : error;
+    }
   }
 
   async modificar(idUsuario: number, entrada: Entrada, ahora = new Date(this.reloj())): Promise<UsuarioPresentado> {

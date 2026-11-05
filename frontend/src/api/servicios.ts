@@ -54,6 +54,19 @@ export const auth = {
     }
   },
 
+  /**
+   * Registro público de pacientes (POST /api/registro). Como el login, usa el token de la sesión
+   * anónima. El backend lo renueva después de cada envío, así que se descarta siempre.
+   */
+  async registrarPaciente(datos: Record<string, string>): Promise<void> {
+    olvidarTokenCsrf();
+    try {
+      await pedir('POST', '/registro', datos, { antesDelLogin: true, sinAvisoDeSesion: true });
+    } finally {
+      olvidarTokenCsrf();
+    }
+  },
+
   async cerrarSesion(): Promise<void> {
     try {
       await pedir('POST', '/auth/logout', undefined, { sinAvisoDeSesion: true });
@@ -82,9 +95,16 @@ export interface FiltroUsuarios {
 }
 
 export const usuarios = {
+  /** Pacientes y personal. Los pacientes no se crean desde recepción: se registran con auth.registrarPaciente. */
   listar: (filtro: FiltroUsuarios) => pedir<ListadoUsuarios>('GET', '/usuarios' + consulta({ ...filtro })),
-  /** Alta de paciente o médico. El rol lo exige el backend: recepción no puede crear recepcionistas. */
-  crear: (datos: Record<string, string>) => pedir<{ usuario: UsuarioGestion }>('POST', '/usuarios', datos),
+  detalle: (id: number) => pedir<{ usuario: UsuarioGestion }>('GET', `/usuarios/${id}`),
+  /** Alta de médico (Configuración). El backend rechaza los pacientes y los recepcionistas. */
+  crearMedico: (datos: Record<string, string>) => pedir<{ usuario: UsuarioGestion }>('POST', '/usuarios', { ...datos, rol: 'medico' }),
+  modificar: (id: number, datos: Record<string, string>) => pedir<{ usuario: UsuarioGestion }>('PATCH', `/usuarios/${id}`, datos),
+  darDeBaja: (id: number) => pedir<{ usuario: UsuarioGestion }>('POST', `/usuarios/${id}/baja`),
+  reactivar: (id: number) => pedir<{ usuario: UsuarioGestion }>('POST', `/usuarios/${id}/reactivacion`),
+  contrasenaProvisoria: (id: number, contrasena: string, confirmacion: string) =>
+    pedir<{ actualizada: true }>('POST', `/usuarios/${id}/contrasena-provisoria`, { contrasena, contrasena_confirmacion: confirmacion }),
 };
 
 // ── Recepción: turnos y catálogo ────────────────────────────────────────────

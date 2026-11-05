@@ -432,3 +432,140 @@ a:focus-visible {
   justify-content: center;
   margin-top: 0.75rem;
 }
+
+/* ── Registro público de pacientes (mismo diseño que register.php) ── */
+.pantalla-registro {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem;
+}
+.tarjeta-registro {
+  width: 100%;
+  max-width: 620px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 2.25rem 2rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+}
+.encabezado-registro {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.encabezado-registro h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--texto-oscuro);
+}
+.encabezado-registro .subtitulo {
+  font-size: 0.82rem;
+  margin-top: 0.25rem;
+}
+.icono-registro {
+  width: 44px;
+  height: 44px;
+  background: var(--primario);
+  color: #fff;
+  border-radius: var(--radio-grande);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+.seccion-registro {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--primario);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 1.25rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--borde);
+}
+.rejilla-registro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+.pantalla-registro .campo {
+  margin-bottom: 1rem;
+}
+.pantalla-registro .campo label span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pantalla-registro .campo .opcional {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--texto-claro);
+}
+.input-registro {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--borde-oscuro);
+  border-radius: var(--radio);
+  font-size: 0.85rem;
+  background: var(--superficie-suave);
+}
+.input-registro:focus {
+  border-color: var(--primario);
+  background: #fff;
+  outline: none;
+}
+.input-registro[aria-invalid='true'] {
+  border-color: var(--error-texto);
+  background: #fef2f2;
+}
+.pantalla-registro .campo-error {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.ayuda-registro {
+  font-size: 0.72rem;
+  color: var(--texto-claro);
+  margin: -0.7rem 0 1rem;
+}
+.boton-registro {
+  width: 100%;
+  justify-content: center;
+  padding: 0.85rem;
+  margin-top: 0.5rem;
+  font-weight: 700;
+}
+.aviso-rol {
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+  text-align: center;
+  margin: 0.75rem 0 0;
+}
+.enlace-cambio {
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+  text-align: center;
+  margin: 1.5rem 0 0;
+}
+.enlace-cambio a {
+  color: var(--primario);
+  font-weight: 700;
+  text-decoration: none;
+}
+.formulario-login .enlace-cambio {
+  margin-top: 0.5rem;
+}
+@media (max-width: 560px) {
+  .tarjeta-registro {
+    padding: 1.75rem 1.25rem;
+  }
+  .rejilla-registro {
+    grid-template-columns: 1fr;
+  }
+}

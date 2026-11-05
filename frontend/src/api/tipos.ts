@@ -96,6 +96,10 @@ export interface UsuarioGestion {
   matricula: string | null;
   obra_social: string | null;
   telefono: string | null;
+  /** Solo en el detalle (GET /api/usuarios/:id). */
+  direccion?: string | null;
+  fecha_nacimiento?: string | null;
+  genero?: string | null;
   gestionable: boolean;
 }
 
