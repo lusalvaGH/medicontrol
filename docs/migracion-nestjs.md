@@ -15,8 +15,9 @@
 | 5. Turnos | Terminada (04/11/2026) | Agenda, disponibilidad, alta, modificación y cancelación para recepción; agenda del médico y turnos del paciente (solo lectura). Mismos casos que `tests/api_escritura_test.php` y `tests/api_lectura_test.php` |
 | 6. Médico y paciente | Pendiente | |
 | 7. Frontend React | En progreso (04/11/2026), sin commit | Circuito de la demo completo: login, calendario de recepción (Día, Semana y Mes, como en PHP), alta y gestión de turnos, pacientes y médicos, registro público de pacientes, agenda del médico, turnos del paciente y cierre de sesión. Probado de punta a punta contra `medicontrol_demo` |
-| 8. Pruebas de integración | Pendiente | |
-| 9. Docker y documentación | Pendiente | Necesita una computadora con Docker: en el equipo actual no se puede instalar |
+| 8. Pruebas de integración | Preparadas, sin ejecutar | Casos nuevos para las reglas de la etapa 10. Se ejecutan contra una base descartable `medicontrol_test_<sufijo>` creada con `npm run preparar-base` |
+| 9. Docker y documentación | Archivos listos, sin probar | `compose.yaml`, Dockerfiles y guías. Necesita una computadora con Docker |
+| 10. Cierre y migración de datos | En progreso (09/11/2026), sin commit | Migraciones versionadas, importador de datos de PHP, cancelados que liberan el horario, sin turnos superpuestos del paciente, contraseña provisoria obligatoria, Mi cuenta con datos propios, notas e historial del médico. Ver [migracion-datos.md](migracion-datos.md) |
 
 ## Cómo ejecutar el backend
 
@@ -33,13 +34,20 @@ npm run dev                   # compila y arranca en http://127.0.0.1:3000/api
 
 ## Pruebas
 
+Las pruebas unitarias (`npx jest src`) no usan base de datos. Las de integración (`test/`) usan
+una base **descartable** con el esquema migrado y las cuentas de demostración públicas. Se crea
+una sola vez y nunca es `medicontrol_test` ni ninguna base existente:
+
 ```powershell
-$env:DB_HOST="127.0.0.1"; $env:DB_PORT="3306"; $env:DB_NAME="medicontrol_test"
+$env:DB_HOST="127.0.0.1"; $env:DB_PORT="3306"; $env:DB_NAME="medicontrol_test_ci"
 $env:DB_USER="<usuario de MariaDB>"; $env:DB_PASSWORD="<contraseña>"
+npm run build; npm run preparar-base   # crea medicontrol_test_ci (se niega si ya existe)
 npm test
 ```
 
-Las pruebas de integración se niegan a correr si `DB_NAME` no es una base `medicontrol_test`.
+Las pruebas de integración se niegan a correr si `DB_NAME` no es una base `medicontrol_test`
+o `medicontrol_test_<sufijo>`. Crean y borran sus propios usuarios y turnos temporales, y al
+terminar comprueban que la huella de la base sea la misma que al empezar.
 
 ## Decisiones técnicas
 
@@ -160,8 +168,9 @@ Los datos de Mi cuenta (nombre, apellido, correo y rol) se leen con `GET /api/au
 - **Parámetro repetido en la query** (`?tipo=a&tipo=b`): se descarta y se usa el valor por defecto. PHP toma el último.
 - **Cuerpo con formato de formulario** (`application/x-www-form-urlencoded`): NestJS lo acepta, y PHP solo lee JSON. El token CSRF por cabecera sigue siendo obligatorio, así que no abre una vía de ataque desde otros sitios.
 
-**Funcionalidades que la versión PHP no tiene y no se agregaron:**
-- Edición de los datos personales propios desde Mi cuenta. En PHP, Mi cuenta solo cambia la contraseña; los datos de pacientes y médicos los edita recepción.
+**Funcionalidades que la versión PHP no tiene y se agregaron en la etapa 10:**
+- Edición de los datos personales propios desde Mi cuenta (`GET /api/cuenta` y `PATCH /api/cuenta/datos`). Cada persona edita su nombre, su apellido y su correo; el paciente, además, su contacto y su perfil. Cambiar el correo exige la contraseña actual, con el mismo límite de intentos que el cambio de contraseña. El DNI, el rol, el estado, la especialidad y la matrícula los sigue gestionando recepción.
+- Contraseña provisoria obligatoria: la que asigna recepción, y la del alta de un médico, marcan `debe_cambiar_contrasena`. Hasta cambiarla, el backend responde 403 `CAMBIO_CONTRASENA_REQUERIDO` en todas las rutas salvo `GET /auth/me`, `GET /auth/csrf`, `GET /cuenta`, `POST /cuenta/contrasena` y el cierre de sesión.
 
 ### Registro público de pacientes
 
@@ -175,6 +184,11 @@ Los datos de Mi cuenta (nombre, apellido, correo y rol) se leen con `GET /api/au
 - Correo o DNI ya registrados: 409 `REGISTRO_NO_DISPONIBLE` con un mensaje único que no revela cuál de los dos existe. Dos envíos simultáneos los frena la restricción única.
 - El token CSRF se renueva después de cada envío, así que el mismo formulario no se puede reenviar.
 - El usuario y su perfil se guardan en una transacción, con la contraseña en formato `$2y$`.
+
+**Agregado en la etapa 10:**
+- Con una sesión iniciada no se crea otra cuenta: 409 `SESION_INICIADA`.
+- Máximo 10 envíos por hora desde una misma conexión, válidos o no; después, 429 `DEMASIADOS_INTENTOS`. Frena la creación masiva de cuentas y las pruebas repetidas para averiguar qué correos o DNI existen. Está en memoria, como el límite del login.
+- El formulario valida el DNI con la misma regla que el backend: se quitan puntos, espacios y guiones, y lo que queda tiene que ser de 7 u 8 dígitos.
 
 **Diferencias:** es una ruta JSON y no un formulario, y la respuesta no devuelve los datos de la cuenta. Como en PHP, no tiene límite de intentos.
 
@@ -197,9 +211,13 @@ Los datos de Mi cuenta (nombre, apellido, correo y rol) se leen con `GET /api/au
 **Igual que en PHP:**
 - Las validaciones, los códigos y los mensajes son los de `TurnosService.php`, con las reglas de la etapa 2 (horarios permitidos, estados, transiciones y fecha futura en la hora de Argentina).
 - Recepción nunca ve las notas médicas.
-- **Reservas simultáneas:** se comprueba que el horario esté libre y, además, la restricción única `uk_medico_fecha_hora` de la base impide dos turnos del mismo médico en la misma fecha y hora. Si dos pedidos pasan la verificación a la vez, el segundo recibe 409 `HORARIO_OCUPADO`. Las dos bases tienen esa restricción.
+- **Reservas simultáneas:** se comprueba que el horario esté libre y, además, una restricción única de la base impide dos turnos vigentes del mismo médico en la misma fecha y hora (`uk_medico_horario_activo`, migración 001). Si dos pedidos pasan la verificación a la vez, el segundo recibe 409 `HORARIO_OCUPADO`.
 - **Ediciones simultáneas:** una modificación o una cancelación solo se guarda si el turno sigue como se leyó (si no, 409 `TURNO_MODIFICADO`).
-- **Horario de un turno cancelado:** sigue ocupado, porque la restricción única también cuenta los cancelados. Liberarlo requiere cambiar el esquema y queda para consultar.
+- **Diferencias con PHP desde la etapa 10:**
+  - **Horario de un turno cancelado:** queda libre y se puede volver a dar. En PHP seguía ocupado. El turno cancelado se conserva en el historial.
+  - **Un paciente no puede tener dos turnos vigentes en la misma fecha y hora**, aunque sean con médicos distintos: 409 `PACIENTE_OCUPADO`, también al reprogramar. Lo garantiza `uk_paciente_horario_activo` aunque dos pedidos lleguen a la vez.
+  - **Las tarjetas de totales** ("Turnos del día", "de la semana" y "del mes", y el total de la agenda del médico) cuentan solo los turnos vigentes. Los cancelados se muestran aparte.
+  - **Notas médicas:** el médico las escribe con `PATCH /api/medico/turnos/:id/notas`, solo en sus turnos, igual que en `panel/medico.php`. Con `GET /api/medico/pacientes/:id/historial` ve los turnos de un paciente con él (no los de otros médicos).
 - **Mes sin turnos:** el resumen devuelve `dias: []`, como `json_encode` de un array vacío en PHP.
 - **Turnos del médico y del paciente:** usan las mismas consultas que `panel/medico.php` y `panel/paciente.php`. El médico o el paciente sale de la sesión, nunca del pedido.
 
@@ -249,10 +267,10 @@ cd frontend; npm install; npm run dev
 | Agenda: vista Mes | Recepción | `GET /turnos/resumen?mes=`, `GET /turnos?fecha=` (turnos del día elegido), `GET /turnos/:id` (detalle), `POST /turnos/:id/cancelacion` |
 | Nuevo turno | Recepción | `GET /medicos`, `GET /medicos/:id/disponibilidad`, `GET /pacientes`, `POST /turnos` |
 | Pacientes: búsqueda por DNI, nombre o correo, y «Registrar turno» | Recepción | `GET /usuarios?tipo=pacientes`. «Registrar turno» abre Nuevo turno con `?dni=` y deja elegido al paciente. Recepción no crea pacientes |
-| Mi agenda | Médico | `GET /medico/agenda?fecha=` |
+| Mi agenda | Médico | `GET /medico/agenda?fecha=`, `PATCH /medico/turnos/:id/notas`, `GET /medico/pacientes/:id/historial` |
 | Mis turnos | Paciente | `GET /paciente/turnos` |
 | Configuración del Sistema (`recepcionista_configuracion.php`) | Recepción | `POST /cuenta/contrasena`; `GET /usuarios`, `GET /usuarios/:id`, `POST /usuarios` (solo médicos), `PATCH /usuarios/:id`, `POST /usuarios/:id/baja`, `/reactivacion` y `/contrasena-provisoria`. Sin «Agregar paciente»: los pacientes se registran solos |
-| Mi cuenta (`mi_cuenta.php`) | Todos | `POST /cuenta/contrasena` |
+| Mi cuenta (`mi_cuenta.php`) | Todos | `GET /cuenta`, `PATCH /cuenta/datos`, `POST /cuenta/contrasena`. Con una contraseña provisoria, es la única pantalla disponible |
 | Cerrar sesión | Todos | `POST /auth/logout` |
 
 **Sesión, cookies y CSRF:**

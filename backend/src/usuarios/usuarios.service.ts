@@ -100,7 +100,8 @@ export class UsuariosService {
 
     const hash = await hashContrasena(datos.contrasena as string);
     const idUsuario = await this.enTransaccion(async (db) => {
-      const id = await this.usuarios.insertar(db, datos, rol, hash);
+      // La contraseña del alta la eligió recepción: el médico la cambia al entrar por primera vez
+      const id = await this.usuarios.insertar(db, datos, rol, hash, true);
       await this.usuarios.insertarPerfilMedico(db, id, datos as DatosPerfilMedico);
 
       return id;

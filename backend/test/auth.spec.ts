@@ -80,9 +80,10 @@ describe('Autenticación, sesiones y permisos', () => {
       const r = await login(agente, DEMO.recepcionista, CLAVE_DEMO);
       expect(r.status).toBe(200);
       expect(r.body.ok).toBe(true);
-      expect(Object.keys(r.body.data.usuario).sort()).toEqual(['apellido', 'email', 'id_usuario', 'nombre', 'rol']);
+      expect(Object.keys(r.body.data.usuario).sort()).toEqual(['apellido', 'debe_cambiar_contrasena', 'email', 'id_usuario', 'nombre', 'rol']);
+      expect(r.body.data.usuario.debe_cambiar_contrasena).toBe(false);
       expect(r.body.data.usuario).toMatchObject({ email: DEMO.recepcionista, rol: 'recepcionista' });
-      expect(JSON.stringify(r.body)).not.toMatch(/\$2[aby]\$|huella|contrasena|123456/);
+      expect(JSON.stringify(r.body)).not.toMatch(/\$2[aby]\$|huella|"contrasena"|123456/);
     });
 
     it('la cookie de sesión es HttpOnly, SameSite=Lax, de sesión y no Secure en HTTP local', async () => {

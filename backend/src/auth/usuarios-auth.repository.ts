@@ -10,6 +10,7 @@ export interface FilaCredencial extends RowDataPacket {
   contrasena: string;
   rol: string;
   estado: string;
+  debe_cambiar_contrasena: number;
 }
 
 /** Consultas de autenticación. Solo lecturas: esta etapa no modifica ninguna cuenta. */
@@ -19,7 +20,7 @@ export class UsuariosAuthRepository {
 
   async buscarPorEmail(email: string): Promise<FilaCredencial | null> {
     const [filas] = await this.pool.execute<FilaCredencial[]>(
-      'SELECT id_usuario, nombre, apellido, email, contrasena, rol, estado FROM usuarios WHERE email = ? LIMIT 1',
+      'SELECT id_usuario, nombre, apellido, email, contrasena, rol, estado, debe_cambiar_contrasena FROM usuarios WHERE email = ? LIMIT 1',
       [email],
     );
 
@@ -28,7 +29,7 @@ export class UsuariosAuthRepository {
 
   async buscarPorId(idUsuario: number): Promise<FilaCredencial | null> {
     const [filas] = await this.pool.execute<FilaCredencial[]>(
-      'SELECT id_usuario, nombre, apellido, email, contrasena, rol, estado FROM usuarios WHERE id_usuario = ? LIMIT 1',
+      'SELECT id_usuario, nombre, apellido, email, contrasena, rol, estado, debe_cambiar_contrasena FROM usuarios WHERE id_usuario = ? LIMIT 1',
       [idUsuario],
     );
 

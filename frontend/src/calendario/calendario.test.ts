@@ -75,10 +75,12 @@ describe('filtros y totales', () => {
     expect(especialidadesDe(lista)).toEqual(['Cardiología', 'Clínica Médica']);
   });
 
-  it('las tarjetas de totales cuentan confirmados, pendientes y en curso', () => {
-    expect(totalesDeTurnos(lista)).toEqual({ total: 3, confirmado: 1, pendiente: 0, en_curso: 1 });
+  it('las tarjetas de totales cuentan los turnos vigentes: los cancelados no suman', () => {
+    expect(totalesDeTurnos(lista)).toEqual({ total: 2, confirmado: 1, pendiente: 0, en_curso: 1 });
     const dia = { total: 2, pendiente: 1, confirmado: 1, en_curso: 0, atendido: 0, cancelado: 0 };
     expect(totalesDelMes({ '2026-11-05': dia, '2026-11-06': dia })).toEqual({ total: 4, confirmado: 2, pendiente: 2, en_curso: 0 });
+    const conCancelado = { ...dia, total: 3, cancelado: 1 };
+    expect(totalesDelMes({ '2026-11-05': conCancelado })).toEqual({ total: 2, confirmado: 1, pendiente: 1, en_curso: 0 });
   });
 
   it('el color de un día del mes sigue la regla de recepcionista_mes.php', () => {

@@ -33,6 +33,23 @@ function esDuplicado(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { errno?: unknown }).errno === 1062;
 }
 
+/** El duplicado vino del índice del paciente (uk_paciente_horario_activo) y no del médico. */
+function esDuplicadoDelPaciente(error: unknown): boolean {
+  return esDuplicado(error) && String((error as { message?: unknown }).message ?? '').includes('uk_paciente_horario_activo');
+}
+
+const pacienteOcupado = () =>
+  new ApiException(409, 'PACIENTE_OCUPADO', 'El paciente ya tiene otro turno en esa fecha y hora. Elegí otro horario.', { hora: 'paciente_ocupado' });
+
+/** Traduce el rechazo de la restricción única al error que corresponde (médico o paciente ocupado). */
+function traducirDuplicado(error: unknown, medicoOcupado: () => ApiException): unknown {
+  if (esDuplicadoDelPaciente(error)) {
+    return pacienteOcupado();
+  }
+
+  return esDuplicado(error) ? medicoOcupado() : error;
+}
+
 /**
  * Registrar, modificar y cancelar turnos (migrado de TurnosService.php). Las reglas puras
  * (horarios, estados, transiciones, fecha futura) son las de la etapa 2.
@@ -86,13 +103,16 @@ export class TurnosService {
     if (await this.turnos.horarioOcupado(datos.id_medico, fecha, hora)) {
       throw ocupado();
     }
+    if (await this.turnos.pacienteOcupado(datos.id_paciente, fecha, hora)) {
+      throw pacienteOcupado();
+    }
 
     let id: number;
     try {
       id = await this.turnos.insertar(datos.id_paciente, datos.id_medico, fecha, hora, motivo);
     } catch (error) {
       // Otra persona tomó el mismo horario entre la verificación y la inserción
-      throw esDuplicado(error) ? ocupado() : error;
+      throw traducirDuplicado(error, ocupado);
     }
 
     return (await this.turnos.buscarPorId(id)) ?? ({ id_turno: id } as Turno);
@@ -135,12 +155,15 @@ export class TurnosService {
     if (validacion.reprograma && (await this.turnos.horarioOcupado(Number(actual.id_medico), fecha, hora, idTurno))) {
       throw ocupado();
     }
+    if (validacion.reprograma && (await this.turnos.pacienteOcupado(Number(actual.id_paciente), fecha, hora, idTurno))) {
+      throw pacienteOcupado();
+    }
 
     let filas: number;
     try {
       filas = await this.turnos.actualizarSiNoCambio(idTurno, { fecha, hora, estado }, actual);
     } catch (error) {
-      throw esDuplicado(error) ? ocupado() : error;
+      throw traducirDuplicado(error, ocupado);
     }
     if (filas === 0) {
       throw new ApiException(409, 'TURNO_MODIFICADO', 'El turno cambió mientras se guardaba. Recargá la página e intentá de nuevo.');

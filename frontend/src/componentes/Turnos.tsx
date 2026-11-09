@@ -11,7 +11,8 @@ export function ResumenEstados({ turnos }: { turnos: { estado: EstadoTurno }[] }
 
   return (
     <div className="resumen" aria-label="Turnos por estado">
-      <span className="etiqueta">Total: {turnos.length}</span>
+      {/* Total de turnos vigentes: los cancelados se muestran aparte */}
+      <span className="etiqueta">Total: {turnos.length - conteo.cancelado}</span>
       {ESTADOS.filter((e) => conteo[e] > 0).map((e) => (
         <span key={e} className={`etiqueta etiqueta-${e}`}>
           {ETIQUETA_ESTADO[e]}: {conteo[e]}

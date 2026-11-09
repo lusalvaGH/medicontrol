@@ -144,23 +144,31 @@ export class TurnosRepository {
   }
 
   /**
-   * Indica si el médico ya tiene un turno en esa fecha y hora.
-   * Incluye los cancelados: la restricción única de la tabla también los cuenta.
+   * Indica si el médico ya tiene un turno vigente en esa fecha y hora. Los cancelados no
+   * ocupan el horario (migración 001: la restricción única tampoco los cuenta).
    */
   async horarioOcupado(idMedico: number, fecha: string, hora: string, exceptoTurno: number | null = null): Promise<boolean> {
-    const [filas] = await this.pool.execute<RowDataPacket[]>('SELECT 1 FROM turnos WHERE id_medico = ? AND fecha = ? AND hora = ? AND id_turno <> ? LIMIT 1', [
-      idMedico,
-      fecha,
-      hora,
-      exceptoTurno ?? 0,
-    ]);
+    const [filas] = await this.pool.execute<RowDataPacket[]>(
+      "SELECT 1 FROM turnos WHERE id_medico = ? AND fecha = ? AND hora = ? AND estado <> 'cancelado' AND id_turno <> ? LIMIT 1",
+      [idMedico, fecha, hora, exceptoTurno ?? 0],
+    );
 
     return filas.length > 0;
   }
 
-  /** Horas (HH:MM:SS) ya ocupadas por el médico en una fecha. */
+  /** Indica si el paciente ya tiene un turno vigente en esa fecha y hora, con cualquier médico. */
+  async pacienteOcupado(idPaciente: number, fecha: string, hora: string, exceptoTurno: number | null = null): Promise<boolean> {
+    const [filas] = await this.pool.execute<RowDataPacket[]>(
+      "SELECT 1 FROM turnos WHERE id_paciente = ? AND fecha = ? AND hora = ? AND estado <> 'cancelado' AND id_turno <> ? LIMIT 1",
+      [idPaciente, fecha, hora, exceptoTurno ?? 0],
+    );
+
+    return filas.length > 0;
+  }
+
+  /** Horas (HH:MM:SS) ocupadas por turnos vigentes del médico en una fecha. */
   async horasOcupadas(idMedico: number, fecha: string): Promise<string[]> {
-    const [filas] = await this.pool.execute<RowDataPacket[]>('SELECT hora FROM turnos WHERE id_medico = ? AND fecha = ?', [idMedico, fecha]);
+    const [filas] = await this.pool.execute<RowDataPacket[]>("SELECT hora FROM turnos WHERE id_medico = ? AND fecha = ? AND estado <> 'cancelado'", [idMedico, fecha]);
 
     return filas.map((f) => String(f.hora));
   }
@@ -209,7 +217,7 @@ export class TurnosRepository {
   /** Turnos de un día del médico, con sus notas y el teléfono del paciente (los ve solo ese médico). */
   async agendaDelMedico(idMedico: number, fecha: string) {
     const [filas] = await this.pool.execute<RowDataPacket[]>(
-      `SELECT t.id_turno, t.fecha, t.hora, t.estado, t.motivo_consulta, t.notas_medicas,
+      `SELECT t.id_turno, t.fecha, t.hora, t.estado, t.motivo_consulta, t.notas_medicas, t.id_paciente,
               CONCAT(up.nombre, ' ', up.apellido) AS paciente, up.dni AS paciente_dni, p.obra_social, p.telefono
        FROM turnos t
        INNER JOIN pacientes p ON p.id_paciente = t.id_paciente
@@ -219,7 +227,47 @@ export class TurnosRepository {
       [idMedico, fecha],
     );
 
+    return filas.map((f) => ({ ...f, id_turno: Number(f.id_turno), id_paciente: Number(f.id_paciente), hora: String(f.hora).slice(0, 5) }));
+  }
+
+  /**
+   * Historial de un paciente con este médico: solo los turnos que atendió o tiene asignados ese
+   * médico, nunca los de otros profesionales (las notas son privadas de cada médico).
+   */
+  async historialConMedico(idMedico: number, idPaciente: number) {
+    const [filas] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT t.id_turno, t.fecha, t.hora, t.estado, t.motivo_consulta, t.notas_medicas
+       FROM turnos t
+       WHERE t.id_medico = ? AND t.id_paciente = ?
+       ORDER BY t.fecha DESC, t.hora DESC, t.id_turno DESC`,
+      [idMedico, idPaciente],
+    );
+
     return filas.map((f) => ({ ...f, id_turno: Number(f.id_turno), hora: String(f.hora).slice(0, 5) }));
+  }
+
+  /** Datos básicos del paciente para el encabezado del historial. */
+  async pacienteResumen(idPaciente: number): Promise<{ id_paciente: number; paciente: string; paciente_dni: string; obra_social: string | null } | null> {
+    const [filas] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT p.id_paciente, CONCAT(u.nombre, ' ', u.apellido) AS paciente, u.dni AS paciente_dni, p.obra_social
+       FROM pacientes p INNER JOIN usuarios u ON u.id_usuario = p.id_usuario WHERE p.id_paciente = ? LIMIT 1`,
+      [idPaciente],
+    );
+
+    return filas[0] ? { id_paciente: Number(filas[0].id_paciente), paciente: filas[0].paciente, paciente_dni: filas[0].paciente_dni, obra_social: filas[0].obra_social } : null;
+  }
+
+  async esTurnoDelMedico(idTurno: number, idMedico: number): Promise<boolean> {
+    const [filas] = await this.pool.execute<RowDataPacket[]>('SELECT 1 FROM turnos WHERE id_turno = ? AND id_medico = ? LIMIT 1', [idTurno, idMedico]);
+
+    return filas.length > 0;
+  }
+
+  /** Guarda las notas solo si el turno es de ese médico (panel/medico.php). Devuelve las filas modificadas. */
+  async guardarNotas(idTurno: number, idMedico: number, notas: string | null): Promise<number> {
+    const [r] = await this.pool.execute<ResultSetHeader>('UPDATE turnos SET notas_medicas = ? WHERE id_turno = ? AND id_medico = ?', [notas, idTurno, idMedico]);
+
+    return r.affectedRows;
   }
 
   /** Turnos del paciente con los datos del médico (mismas columnas que vista_paciente_turnos). */

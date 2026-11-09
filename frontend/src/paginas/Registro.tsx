@@ -5,6 +5,7 @@ import { auth } from '../api/servicios';
 import { Campo } from '../componentes/Campo';
 import { Cargando, MensajeError } from '../componentes/Estados';
 import { INICIO_POR_ROL, useSesion } from '../sesion/SesionContexto';
+import { MENSAJE_DNI, dniValido } from '../utilidades/dni';
 import { hoyEnClinica } from '../utilidades/fechas';
 
 /** Mismos valores que GENEROS en el backend (y ValidadorPersonas::GENEROS en PHP). */
@@ -37,6 +38,7 @@ export function Registro() {
   const navegar = useNavigate();
   const formulario = useRef<HTMLFormElement>(null);
   const confirmacion = useRef<HTMLInputElement>(null);
+  const campoDni = useRef<HTMLInputElement>(null);
   const [datos, setDatos] = useState(VACIO);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -54,6 +56,9 @@ export function Registro() {
     if (campo === 'contrasena_confirmacion') {
       confirmacion.current?.setCustomValidity('');
     }
+    if (campo === 'dni') {
+      campoDni.current?.setCustomValidity('');
+    }
     setDatos((d) => ({ ...d, [campo]: e.target.value }));
   };
 
@@ -61,6 +66,8 @@ export function Registro() {
     evento.preventDefault();
     const form = formulario.current;
     confirmacion.current?.setCustomValidity(datos.contrasena === datos.contrasena_confirmacion ? '' : 'Las contraseñas no coinciden.');
+    // Misma regla que el backend: sin puntos, espacios ni guiones, 7 u 8 dígitos
+    campoDni.current?.setCustomValidity(datos.dni.trim() === '' || dniValido(datos.dni) ? '' : MENSAJE_DNI);
     if (form && !form.checkValidity()) {
       form.reportValidity();
       return;
@@ -110,7 +117,7 @@ export function Registro() {
             {texto('apellido', 'Apellido', { maxLength: 80, autoComplete: 'family-name', required: true })}
           </div>
           <div className="rejilla-registro">
-            {texto('dni', 'DNI', { inputMode: 'numeric', maxLength: 10, pattern: '[0-9.]{7,10}', placeholder: 'Ej. 38123456', required: true })}
+            {texto('dni', 'DNI', { ref: campoDni, inputMode: 'numeric', maxLength: 12, placeholder: 'Ej. 38.123.456', required: true })}
             {texto('fecha_nacimiento', opcional('Fecha de nacimiento'), { type: 'date', min: '1900-01-01', max: hoyEnClinica() })}
           </div>
           <div className="rejilla-registro">

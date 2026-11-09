@@ -5,6 +5,7 @@
 import { ErrorApi, olvidarTokenCsrf, pedir } from './cliente';
 import type {
   ConteoDia,
+  DatosCuenta,
   EstadoTurno,
   Horario,
   ListadoUsuarios,
@@ -12,6 +13,7 @@ import type {
   PacienteCatalogo,
   Turno,
   TurnoAgendaMedico,
+  TurnoHistorial,
   TurnoPaciente,
   UsuarioGestion,
   UsuarioSesion,
@@ -85,6 +87,14 @@ export const auth = {
   },
 };
 
+// ── Mi cuenta ───────────────────────────────────────────────────────────────
+
+export const cuenta = {
+  datos: async () => (await pedir<{ cuenta: DatosCuenta }>('GET', '/cuenta')).cuenta,
+  /** Datos propios. contrasena_actual solo hace falta si cambia el correo. */
+  actualizar: async (datos: Record<string, string>) => (await pedir<{ cuenta: DatosCuenta }>('PATCH', '/cuenta/datos', datos)).cuenta,
+};
+
 // ── Recepción: usuarios ─────────────────────────────────────────────────────
 
 export interface FiltroUsuarios {
@@ -134,5 +144,14 @@ export const catalogo = {
 
 export const misTurnos = {
   agendaMedico: (fecha: string) => pedir<{ fecha: string; turnos: TurnoAgendaMedico[] }>('GET', '/medico/agenda' + consulta({ fecha })),
+  /** Notas de un turno propio del médico. Un texto vacío las borra. */
+  guardarNotas: (idTurno: number, notas: string) =>
+    pedir<{ id_turno: number; notas_medicas: string | null }>('PATCH', `/medico/turnos/${idTurno}/notas`, { notas_medicas: notas }),
+  /** Turnos de un paciente con el médico de la sesión (nunca con otros médicos). */
+  historial: (idPaciente: number) =>
+    pedir<{ paciente: { id_paciente: number; paciente: string; paciente_dni: string; obra_social: string | null }; turnos: TurnoHistorial[] }>(
+      'GET',
+      `/medico/pacientes/${idPaciente}/historial`,
+    ),
   delPaciente: () => pedir<{ turnos: TurnoPaciente[] }>('GET', '/paciente/turnos'),
 };

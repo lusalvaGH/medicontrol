@@ -12,7 +12,11 @@
     "start": "node dist/main.js",
     "dev": "npm run build && node dist/main.js",
     "test": "jest",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "migraciones": "node dist/migraciones/cli.js",
+    "migraciones:aplicar": "node dist/migraciones/cli.js --aplicar",
+    "preparar-base": "node dist/migraciones/preparar-base.js",
+    "importar-php": "node dist/importacion/cli.js"
   },
   "jest": {
     "rootDir": ".",

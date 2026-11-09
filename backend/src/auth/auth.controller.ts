@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService, SesionExpress, cerrar } from './auth.service';
-import { Publico, UsuarioActual } from './decoradores';
+import { PermitidaConContrasenaProvisoria, Publico, UsuarioActual } from './decoradores';
 import { NOMBRE_COOKIE } from './sesion.config';
 import { UsuarioSesion, nuevoTokenCsrf } from './sesion';
 
@@ -17,12 +17,14 @@ export class AuthController {
   }
 
   /** GET /api/auth/csrf — token para los pedidos que modifican datos (requiere sesión). */
+  @PermitidaConContrasenaProvisoria()
   @Get('csrf')
   csrf(@Req() pedido: Request): { token: string } {
     return { token: tokenDe(pedido.session as SesionExpress) };
   }
 
   /** GET /api/auth/me — usuario de la sesión actual. */
+  @PermitidaConContrasenaProvisoria()
   @Get('me')
   yo(@UsuarioActual() usuario: UsuarioSesion): { usuario: UsuarioSesion } {
     return { usuario };

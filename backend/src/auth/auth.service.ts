@@ -95,6 +95,7 @@ function presentar(fila: FilaCredencial): UsuarioSesion {
     apellido: String(fila.apellido),
     email: String(fila.email),
     rol: fila.rol as UsuarioSesion['rol'],
+    debe_cambiar_contrasena: Number(fila.debe_cambiar_contrasena) === 1,
   };
 }
 

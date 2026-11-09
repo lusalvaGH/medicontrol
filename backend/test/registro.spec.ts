@@ -152,6 +152,36 @@ describe('Registro público de pacientes', () => {
     expect((await agente.get('/api/usuarios')).status).toBe(403);
   });
 
+  it('con una sesión iniciada no se crea otra cuenta (409 SESION_INICIADA)', async () => {
+    const agente = anonimo();
+    expect((await login(agente, 'lucia.registro' + DOMINIO_TEMPORAL, CLAVE)).status).toBe(200);
+    const antes = await cantidadUsuarios();
+    const r = await registrar(agente, valido({ email: 'conSesion' + DOMINIO_TEMPORAL, dni: '95.777.111' }));
+    expect([r.status, r.body.error.codigo]).toEqual([409, 'SESION_INICIADA']);
+    expect(await cantidadUsuarios()).toBe(antes);
+  });
+
+  it('limita los envíos por conexión: al superar el máximo responde 429 y no crea nada', async () => {
+    const otra = await crearApp({ limitadorRegistro: { maxIntentos: 2 } });
+    try {
+      const agente = request.agent(otra.getHttpServer());
+      const enviar = async (cuerpo: object) => {
+        const token = await tokenCsrf(agente, '/api/auth/csrf-inicio');
+
+        return agente.post('/api/registro').set('X-CSRF-Token', token).send(cuerpo);
+      };
+      // Los envíos inválidos también cuentan: así no se puede probar correos o DNI sin límite
+      expect((await enviar({})).status).toBe(400);
+      expect((await enviar({})).status).toBe(400);
+      const antes = await cantidadUsuarios();
+      const r = await enviar(valido({ email: 'limite' + DOMINIO_TEMPORAL, dni: '95.888.222' }));
+      expect([r.status, r.body.error.codigo]).toEqual([429, 'DEMASIADOS_INTENTOS']);
+      expect(await cantidadUsuarios()).toBe(antes);
+    } finally {
+      await otra.close();
+    }
+  });
+
   it('solo acepta POST', async () => {
     expect((await anonimo().get('/api/registro')).status).toBe(405);
   });

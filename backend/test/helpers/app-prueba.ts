@@ -6,6 +6,7 @@ import type { Pool, ResultSetHeader } from 'mysql2/promise';
 import { AppModule } from '../../src/app.module';
 import { Publico, Roles, UsuarioActual } from '../../src/auth/decoradores';
 import { LimitadorLogin, OpcionesLimitador, LIMITE_LOGIN } from '../../src/auth/limitador-login';
+import { LimitadorRegistro, OpcionesLimitadorRegistro } from '../../src/usuarios/limitador-registro';
 import type { UsuarioSesion } from '../../src/auth/sesion';
 import { SESIONES } from '../../src/auth/sesion.config';
 import { SesionesEnMemoria } from '../../src/auth/sesion.store';
@@ -66,6 +67,8 @@ export class RutasDePruebaController {
 export interface OpcionesApp {
   inactividadMs?: number;
   limitador?: Partial<OpcionesLimitador>;
+  /** Por defecto las pruebas no chocan con el límite del registro público. */
+  limitadorRegistro?: Partial<OpcionesLimitadorRegistro>;
   controladores?: Type<unknown>[];
 }
 
@@ -73,7 +76,9 @@ export async function crearApp(opciones: OpcionesApp = {}): Promise<INestApplica
   exigirBaseDePruebas();
   let constructor = Test.createTestingModule({ imports: [AppModule], controllers: opciones.controladores ?? [RutasDePruebaController] })
     .overrideProvider(LimitadorLogin)
-    .useValue(new LimitadorLogin({ ...LIMITE_LOGIN, ...opciones.limitador }));
+    .useValue(new LimitadorLogin({ ...LIMITE_LOGIN, ...opciones.limitador }))
+    .overrideProvider(LimitadorRegistro)
+    .useValue(new LimitadorRegistro({ maxIntentos: 1000, ventanaMs: 60 * 60 * 1000, ...opciones.limitadorRegistro }));
   if (opciones.inactividadMs !== undefined) {
     constructor = constructor.overrideProvider(SESIONES).useValue(new SesionesEnMemoria(opciones.inactividadMs));
   }

@@ -10,7 +10,7 @@ vi.mock('./SesionContexto', async (original) => ({
   useSesion: () => ({ sesion: sesionSimulada.valor, iniciarSesion: vi.fn(), cerrarSesion: vi.fn() }),
 }));
 
-const usuario = (rol: UsuarioSesion['rol']): UsuarioSesion => ({ id_usuario: 1, nombre: 'Ana', apellido: 'Paz', email: 'a@b.test', rol });
+const usuario = (rol: UsuarioSesion['rol'], debe_cambiar_contrasena = false): UsuarioSesion => ({ id_usuario: 1, nombre: 'Ana', apellido: 'Paz', email: 'a@b.test', rol, debe_cambiar_contrasena });
 
 function montar(inicial: string) {
   render(
@@ -19,6 +19,7 @@ function montar(inicial: string) {
         <Route path="/login" element={<p>pantalla de login</p>} />
         <Route path="/medico/agenda" element={<p>agenda del médico</p>} />
         <Route path="/paciente/turnos" element={<p>turnos del paciente</p>} />
+        <Route path="/mi-cuenta" element={<p>mi cuenta</p>} />
         <Route element={<RutaProtegida roles={['recepcionista']} />}>
           <Route path="/recepcion/agenda" element={<p>agenda de recepción</p>} />
         </Route>
@@ -57,5 +58,12 @@ describe('RutaProtegida', () => {
     sesionSimulada.valor = { estado: 'autenticado', usuario: usuario('paciente') };
     montar('/recepcion/agenda');
     expect(screen.getByText('turnos del paciente')).toBeTruthy();
+  });
+
+  it('con una contraseña provisoria solo deja ir a «Mi cuenta»', () => {
+    sesionSimulada.valor = { estado: 'autenticado', usuario: usuario('recepcionista', true) };
+    montar('/recepcion/agenda');
+    expect(screen.getByText('mi cuenta')).toBeTruthy();
+    expect(screen.queryByText('agenda de recepción')).toBeNull();
   });
 });

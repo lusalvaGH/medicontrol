@@ -107,7 +107,7 @@ describe('Registro público de pacientes', () => {
   });
 
   it('con una sesión iniciada lleva al panel del rol', async () => {
-    vi.spyOn(auth, 'usuarioActual').mockResolvedValue({ id_usuario: 9, nombre: 'Ana', apellido: 'Paz', email: 'ana@demo.test', rol: 'paciente' });
+    vi.spyOn(auth, 'usuarioActual').mockResolvedValue({ id_usuario: 9, nombre: 'Ana', apellido: 'Paz', email: 'ana@demo.test', rol: 'paciente', debe_cambiar_contrasena: false });
     montar();
     await waitFor(() => expect(screen.getByText(/panel del paciente/)).toBeTruthy());
   });

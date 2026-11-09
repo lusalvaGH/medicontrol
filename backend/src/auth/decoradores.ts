@@ -11,6 +11,14 @@ export const Publico = (): MethodDecorator & ClassDecorator => SetMetadata(META_
 /** Solo estos roles pueden usar la ruta (como Guard::requerirRol en PHP). */
 export const Roles = (...roles: Rol[]): MethodDecorator & ClassDecorator => SetMetadata(META_ROLES, roles);
 
+export const META_CON_PROVISORIA = 'medicontrol:con-provisoria';
+
+/**
+ * La ruta se puede usar aunque la persona tenga una contraseña provisoria pendiente de cambio
+ * (consultar la sesión, pedir el token CSRF y cambiar la contraseña). Las demás responden 403.
+ */
+export const PermitidaConContrasenaProvisoria = (): MethodDecorator & ClassDecorator => SetMetadata(META_CON_PROVISORIA, true);
+
 export type PedidoConUsuario = Request & { usuario?: UsuarioSesion };
 
 /** Usuario de la sesión ya verificado. Nunca sale de datos enviados por el cliente. */

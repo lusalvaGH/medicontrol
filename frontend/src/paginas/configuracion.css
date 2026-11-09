@@ -109,3 +109,7 @@
   .cfg-permisos > h2, .cfg-permisos > .cfg-ayuda { padding-left: 1rem; padding-right: 1rem; }
   .cfg-campos { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ── Mi cuenta: datos propios ── */
+.tarjeta-datos { margin-top: 1.5rem; }
+.cuenta-contenido .aviso { margin-bottom: 1rem; }

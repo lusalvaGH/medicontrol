@@ -35,17 +35,20 @@ export interface Totales {
   en_curso: number;
 }
 
-/** Las cuatro tarjetas de totales de las pantallas PHP. */
+/**
+ * Las cuatro tarjetas de totales de las pantallas PHP. «Turnos» cuenta solo los vigentes: un
+ * turno cancelado ya no ocupa la agenda (ni su horario).
+ */
 export function totalesDeTurnos(turnos: { estado: EstadoTurno }[]): Totales {
   const contar = (estado: EstadoTurno) => turnos.filter((t) => t.estado === estado).length;
 
-  return { total: turnos.length, confirmado: contar('confirmado'), pendiente: contar('pendiente'), en_curso: contar('en_curso') };
+  return { total: turnos.length - contar('cancelado'), confirmado: contar('confirmado'), pendiente: contar('pendiente'), en_curso: contar('en_curso') };
 }
 
 export function totalesDelMes(dias: Record<string, ConteoDia>): Totales {
   const totales: Totales = { total: 0, confirmado: 0, pendiente: 0, en_curso: 0 };
   for (const c of Object.values(dias)) {
-    totales.total += c.total;
+    totales.total += c.total - c.cancelado;
     totales.confirmado += c.confirmado;
     totales.pendiente += c.pendiente;
     totales.en_curso += c.en_curso;

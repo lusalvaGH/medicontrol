@@ -51,7 +51,13 @@ export function Agenda() {
   const listo = (mensaje: string, turno: Turno | null) => {
     setVentana(null);
     mostrar(`✅ ${mensaje}`);
-    setIdElegido(turno && turno.fecha === fecha ? turno.id_turno : null);
+    // Reprogramado a otro día: la vista Día va a esa fecha y lo deja seleccionado
+    if (turno && turno.fecha !== fecha) {
+      setIdElegido(turno.id_turno);
+      irA(turno.fecha);
+      return;
+    }
+    setIdElegido(turno ? turno.id_turno : null);
     recargar();
   };
 

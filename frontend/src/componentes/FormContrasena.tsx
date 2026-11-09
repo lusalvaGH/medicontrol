@@ -8,7 +8,7 @@ import { mensajeDeError } from './Estados';
  * contraseña propia con POST /api/cuenta/contrasena. Las validaciones de acá solo evitan un envío
  * inútil; las reales (largo, letras y números, distinta de la actual, límite de intentos) son del backend.
  */
-export function FormContrasena({ email }: { email: string }) {
+export function FormContrasena({ email, alCambiar }: { email: string; alCambiar?: () => void }) {
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
@@ -36,6 +36,7 @@ export function FormContrasena({ email }: { email: string }) {
       setNueva('');
       setConfirmacion('');
       setMensaje({ texto: 'Tu contraseña se actualizó correctamente.', error: false });
+      alCambiar?.();
     } catch (e) {
       setMensaje({ texto: e instanceof ErrorApi ? e.message : mensajeDeError(e), error: true });
       if (e instanceof ErrorApi && e.codigo === 'CONTRASENA_ACTUAL_INCORRECTA') {

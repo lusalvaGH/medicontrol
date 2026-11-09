@@ -77,8 +77,8 @@ describe('Mi cuenta: cambio de la contraseña propia', () => {
       const u = await nuevoUsuario('medico');
       const ag = await sesionIniciada(app, u.email, CLAVE);
       const r = await ag.get('/api/auth/me');
-      expect(r.body.data.usuario).toEqual({ id_usuario: u.id, nombre: 'Temporal', apellido: 'Nest', email: u.email, rol: 'medico' });
-      expect(JSON.stringify(r.body)).not.toMatch(/\$2[aby]\$|huella|contrasena/);
+      expect(r.body.data.usuario).toEqual({ id_usuario: u.id, nombre: 'Temporal', apellido: 'Nest', email: u.email, rol: 'medico', debe_cambiar_contrasena: false });
+      expect(JSON.stringify(r.body)).not.toMatch(/\$2[aby]\$|huella|"contrasena"/);
     });
   });
 
@@ -294,6 +294,89 @@ describe('Mi cuenta: cambio de la contraseña propia', () => {
       const respuestas = await Promise.all(Array.from({ length: 8 }, () => cambiar(ag, 'Equivocada2026', NUEVA, NUEVA, { token })));
       const estados = respuestas.map((r) => r.estado).sort();
       expect(estados).toEqual([422, 422, 422, 422, 422, 429, 429, 429]);
+    });
+  });
+
+  describe('datos propios', () => {
+    const editar = async (ag: Agente, datos: object) => {
+      const token = await tokenCsrf(ag);
+
+      return ag.patch('/api/cuenta/datos').set('X-CSRF-Token', token).send(datos);
+    };
+
+    it('GET /api/cuenta devuelve solo los datos propios, sin contraseña; sin sesión 401', async () => {
+      const u = await nuevoUsuario('paciente');
+      const ag = await sesionIniciada(app, u.email, CLAVE);
+      const r = await ag.get('/api/cuenta').query({ id_usuario: 1 });
+      expect(r.status).toBe(200);
+      expect(r.body.data.cuenta).toMatchObject({ email: u.email, rol: 'paciente', dni: u.dni });
+      expect(JSON.stringify(r.body)).not.toMatch(/\$2[aby]\$|"contrasena"|huella/);
+      expect((await request(app.getHttpServer()).get('/api/cuenta')).status).toBe(401);
+    });
+
+    it('el paciente edita su contacto y su nombre; el DNI, el rol y el estado no cambian aunque se envíen', async () => {
+      const u = await nuevoUsuario('paciente');
+      const ag = await sesionIniciada(app, u.email, CLAVE);
+      const r = await editar(ag, {
+        nombre: '  Ana  María ',
+        apellido: 'Paz',
+        email: u.email,
+        telefono: '+54 11 5555-0000',
+        obra_social: 'OSDE',
+        genero: 'Femenino',
+        fecha_nacimiento: '1990-01-01',
+        dni: '11111111',
+        rol: 'recepcionista',
+        estado: 'inactivo',
+        id_usuario: 1,
+      });
+      expect(r.status).toBe(200);
+      expect(r.body.data.cuenta).toMatchObject({ nombre: 'Ana María', telefono: '+54 11 5555-0000', obra_social: 'OSDE' });
+      expect(await tmp.fila(u.id)).toMatchObject({ nombre: 'Ana María', dni: u.dni, rol: 'paciente', estado: 'activo', telefono: '+54 11 5555-0000' });
+    });
+
+    it('el médico edita nombre y correo, pero no su especialidad; cambiar el correo exige la contraseña actual', async () => {
+      const u = await nuevoUsuario('medico');
+      const ag = await sesionIniciada(app, u.email, CLAVE);
+      const nuevoCorreo = 'Cambio.' + u.email;
+      const sin = await editar(ag, { nombre: 'Luis', apellido: 'Gómez', email: nuevoCorreo, especialidad: 'Otra' });
+      expect([sin.status, sin.body.error.campos]).toEqual([400, { contrasena_actual: 'requerido' }]);
+      const mal = await editar(ag, { nombre: 'Luis', apellido: 'Gómez', email: nuevoCorreo, contrasena_actual: 'Equivocada2026' });
+      expect([mal.status, mal.body.error.codigo]).toEqual([422, 'CONTRASENA_ACTUAL_INCORRECTA']);
+      const ok = await editar(ag, { nombre: 'Luis', apellido: 'Gómez', email: nuevoCorreo, contrasena_actual: CLAVE, especialidad: 'Otra' });
+      expect([ok.status, ok.body.data.cuenta.email, ok.body.data.cuenta.especialidad]).toEqual([200, nuevoCorreo.toLowerCase(), 'Prueba']);
+      // Con el correo nuevo inicia sesión; la sesión actual sigue válida
+      expect((await login(request.agent(app.getHttpServer()), nuevoCorreo, CLAVE)).status).toBe(200);
+      expect((await ag.get('/api/auth/me')).body.data.usuario.email).toBe(nuevoCorreo.toLowerCase());
+    });
+
+    it('rechaza datos inválidos y un correo que ya usa otra persona', async () => {
+      const u = await nuevoUsuario('paciente');
+      const otro = await nuevoUsuario('paciente');
+      const ag = await sesionIniciada(app, u.email, CLAVE);
+      const invalido = await editar(ag, { nombre: 'A', apellido: 'Paz', email: 'no-es-correo', telefono: 'abc' });
+      expect(invalido.status).toBe(400);
+      expect(Object.keys(invalido.body.error.campos).sort()).toEqual(['email', 'nombre', 'telefono']);
+      const repetido = await editar(ag, { nombre: 'Ana', apellido: 'Paz', email: otro.email, contrasena_actual: CLAVE });
+      expect([repetido.status, repetido.body.error.codigo]).toEqual([409, 'DATO_DUPLICADO']);
+      expect((await tmp.fila(u.id)).email).toBe(u.email);
+    });
+  });
+
+  describe('contraseña provisoria', () => {
+    it('hasta cambiarla solo puede ver su cuenta y cambiar la contraseña; después usa el sistema normalmente', async () => {
+      const u = await nuevoUsuario('paciente');
+      await pool.execute('UPDATE usuarios SET debe_cambiar_contrasena = 1 WHERE id_usuario = ?', [u.id]);
+      const ag = await sesionIniciada(app, u.email, CLAVE);
+      expect((await ag.get('/api/auth/me')).body.data.usuario.debe_cambiar_contrasena).toBe(true);
+      expect((await ag.get('/api/cuenta')).status).toBe(200);
+      const bloqueada = await ag.get('/api/paciente/turnos');
+      expect([bloqueada.status, bloqueada.body.error.codigo]).toEqual([403, 'CAMBIO_CONTRASENA_REQUERIDO']);
+
+      expect((await cambiar(ag, CLAVE, NUEVA)).estado).toBe(200);
+      expect((await tmp.fila(u.id)).debe_cambiar_contrasena).toBe(0);
+      expect((await ag.get('/api/auth/me')).body.data.usuario.debe_cambiar_contrasena).toBe(false);
+      expect((await ag.get('/api/paciente/turnos')).status).toBe(200);
     });
   });
 });

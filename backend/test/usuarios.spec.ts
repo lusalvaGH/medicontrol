@@ -224,6 +224,8 @@ describe('Gestión de usuarios (Configuración de Recepción)', () => {
       expect(fila).toMatchObject({ rol: 'medico', estado: 'activo', especialidad: 'Dermatología', matricula: 'MN-1234', dni: '94111222', email: 'ana.alta' + DOMINIO_TEMPORAL });
       expect(String(fila.contrasena).startsWith('$2y$10$')).toBe(true);
       expect(compareSync(PROVISORIA, fila.contrasena)).toBe(true);
+      // La contraseña del alta la eligió recepción: el médico la cambia al entrar
+      expect(fila.debe_cambiar_contrasena).toBe(1);
       expect(r.body.data.usuario.gestionable).toBe(true);
       cuantosAntes = await tmp.cantidad();
     });
@@ -456,7 +458,12 @@ describe('Gestión de usuarios (Configuración de Recepción)', () => {
       expect(compareSync(PROVISORIA, hash)).toBe(true);
       expect((await agSujeto.get('/api/auth/me')).status).toBe(401);
       expect((await login(request.agent(app.getHttpServer()), sujeto.email, CLAVE)).status).toBe(401);
-      expect((await login(request.agent(app.getHttpServer()), sujeto.email, PROVISORIA)).status).toBe(200);
+      // Entra con la provisoria, pero tiene que cambiarla antes de usar el sistema (migración 002)
+      expect((await tmp.fila(sujeto.id)).debe_cambiar_contrasena).toBe(1);
+      const agProvisoria = request.agent(app.getHttpServer());
+      const entrada = await login(agProvisoria, sujeto.email, PROVISORIA);
+      expect([entrada.status, entrada.body.data.usuario.debe_cambiar_contrasena]).toEqual([200, true]);
+      expect((await agProvisoria.get('/api/medico/agenda')).body.error.codigo).toBe('CAMBIO_CONTRASENA_REQUERIDO');
     });
 
     it('no se aplica a sí mismo, a otro recepcionista ni a un usuario inexistente', async () => {

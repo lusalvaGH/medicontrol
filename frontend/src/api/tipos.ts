@@ -11,6 +11,34 @@ export interface UsuarioSesion {
   apellido: string;
   email: string;
   rol: Rol;
+  /** Contraseña provisoria: hasta cambiarla, el backend solo deja usar «Mi cuenta». */
+  debe_cambiar_contrasena: boolean;
+}
+
+/** Datos propios de «Mi cuenta» (GET /api/cuenta). Los de perfil dependen del rol. */
+export interface DatosCuenta {
+  nombre: string;
+  apellido: string;
+  dni: string;
+  email: string;
+  rol: Rol;
+  especialidad?: string | null;
+  matricula?: string | null;
+  telefono?: string | null;
+  direccion?: string | null;
+  fecha_nacimiento?: string | null;
+  genero?: string | null;
+  obra_social?: string | null;
+}
+
+/** Turno del historial de un paciente con el médico de la sesión. */
+export interface TurnoHistorial {
+  id_turno: number;
+  fecha: string;
+  hora: string;
+  estado: EstadoTurno;
+  motivo_consulta: string;
+  notas_medicas: string | null;
 }
 
 export interface ErrorRespuesta {
@@ -44,6 +72,7 @@ export interface TurnoAgendaMedico {
   estado: EstadoTurno;
   motivo_consulta: string;
   notas_medicas: string | null;
+  id_paciente: number;
   paciente: string;
   paciente_dni: string;
   obra_social: string | null;

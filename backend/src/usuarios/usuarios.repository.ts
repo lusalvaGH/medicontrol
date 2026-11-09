@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { ApiException } from '../comun/api-exception';
 import { POOL_DB } from '../database/database.module';
 import type { DatosPerfilMedico, DatosPerfilPaciente, DatosPersona } from '../reglas/personas.validador';
 
@@ -40,6 +41,29 @@ export class UsuariosRepository {
     return this.pool.getConnection();
   }
 
+  /**
+   * Ejecuta el trabajo en una transacción: si algo falla se deshace todo. Un correo o DNI
+   * repetido por dos envíos simultáneos lo frena la restricción única (1062) y se informa como 409.
+   */
+  async enTransaccion<T>(trabajo: (db: PoolConnection) => Promise<T>): Promise<T> {
+    const db = await this.pool.getConnection();
+    try {
+      await db.beginTransaction();
+      const resultado = await trabajo(db);
+      await db.commit();
+
+      return resultado;
+    } catch (error) {
+      await db.rollback();
+      if (typeof error === 'object' && error !== null && (error as { errno?: unknown }).errno === 1062) {
+        throw new ApiException(409, 'DATO_DUPLICADO', 'El correo o el DNI ya pertenecen a otro usuario.');
+      }
+      throw error;
+    } finally {
+      db.release();
+    }
+  }
+
   /** Hash de la contraseña. Separado del resto para leerlo solo cuando hace falta. */
   async buscarHashContrasena(idUsuario: number): Promise<string | null> {
     const [filas] = await this.pool.execute<RowDataPacket[]>('SELECT contrasena FROM usuarios WHERE id_usuario = ? LIMIT 1', [idUsuario]);
@@ -54,7 +78,8 @@ export class UsuariosRepository {
    */
   async actualizarContrasena(idUsuario: number, hashNuevo: string, hashLeido: string): Promise<number> {
     const [r] = await this.pool.execute<ResultSetHeader>(
-      "UPDATE usuarios SET contrasena = ? WHERE id_usuario = ? AND contrasena = ? AND estado = 'activo'",
+      // La contraseña nueva la eligió la persona: deja de ser provisoria
+      "UPDATE usuarios SET contrasena = ?, debe_cambiar_contrasena = 0 WHERE id_usuario = ? AND contrasena = ? AND estado = 'activo'",
       [hashNuevo, idUsuario, hashLeido],
     );
 
@@ -127,11 +152,14 @@ export class UsuariosRepository {
     return [...duplicados];
   }
 
-  /** Crea el usuario activo. El rol lo decide siempre quien llama, nunca un formulario. */
-  async insertar(db: Ejecutor, datos: DatosPersona, rol: 'medico' | 'paciente', hashContrasena: string): Promise<number> {
+  /**
+   * Crea el usuario activo. El rol lo decide siempre quien llama, nunca un formulario.
+   * provisoria: la contraseña la eligió otra persona (recepción) y hay que cambiarla al entrar.
+   */
+  async insertar(db: Ejecutor, datos: DatosPersona, rol: 'medico' | 'paciente', hashContrasena: string, provisoria = false): Promise<number> {
     const [r] = await db.execute<ResultSetHeader>(
-      "INSERT INTO usuarios (nombre, apellido, dni, email, contrasena, rol, estado) VALUES (?, ?, ?, ?, ?, ?, 'activo')",
-      [datos.nombre, datos.apellido, datos.dni, datos.email, hashContrasena, rol],
+      "INSERT INTO usuarios (nombre, apellido, dni, email, contrasena, rol, estado, debe_cambiar_contrasena) VALUES (?, ?, ?, ?, ?, ?, 'activo', ?)",
+      [datos.nombre, datos.apellido, datos.dni, datos.email, hashContrasena, rol, provisoria ? 1 : 0],
     );
 
     return r.insertId;
@@ -181,9 +209,12 @@ export class UsuariosRepository {
     return r.affectedRows;
   }
 
-  /** Contraseña provisoria: al cambiar el hash, las sesiones de ese usuario dejan de ser válidas. */
+  /**
+   * Contraseña provisoria: al cambiar el hash, las sesiones de ese usuario dejan de ser válidas,
+   * y al entrar tiene que elegir una contraseña propia antes de usar el sistema.
+   */
   async establecerContrasena(idUsuario: number, hashNuevo: string): Promise<void> {
-    await this.pool.execute('UPDATE usuarios SET contrasena = ? WHERE id_usuario = ?', [hashNuevo, idUsuario]);
+    await this.pool.execute('UPDATE usuarios SET contrasena = ?, debe_cambiar_contrasena = 1 WHERE id_usuario = ?', [hashNuevo, idUsuario]);
   }
 
   /**

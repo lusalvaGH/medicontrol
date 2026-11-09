@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ApiException } from '../comun/api-exception';
 import { AuthService, SesionExpress } from './auth.service';
-import { META_PUBLICO, META_ROLES, PedidoConUsuario } from './decoradores';
+import { META_CON_PROVISORIA, META_PUBLICO, META_ROLES, PedidoConUsuario } from './decoradores';
 import { Rol, igualesSeguro } from './sesion';
 
 const METODOS_SEGUROS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -29,6 +29,11 @@ export class SeguridadGuard implements CanActivate {
       pedido.usuario = await this.auth.usuarioVigente(sesion);
       if (roles && !roles.includes(pedido.usuario.rol)) {
         throw new ApiException(403, 'SIN_PERMISO', 'No tenés permiso para realizar esta operación.');
+      }
+      // Contraseña provisoria: hasta cambiarla, solo se puede consultar la sesión y cambiarla
+      const conProvisoria = this.reflector.getAllAndOverride<boolean>(META_CON_PROVISORIA, objetivos) === true;
+      if (pedido.usuario.debe_cambiar_contrasena && !conProvisoria) {
+        throw new ApiException(403, 'CAMBIO_CONTRASENA_REQUERIDO', 'Tenés que cambiar tu contraseña provisoria antes de continuar.');
       }
     }
 

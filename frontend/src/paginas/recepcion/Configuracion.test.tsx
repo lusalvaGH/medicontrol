@@ -29,7 +29,7 @@ const paciente = persona({ id_usuario: 12, nombre: 'Ana', apellido: 'Paz', rol: 
 const listado = (lista: UsuarioGestion[]): ListadoUsuarios => ({ usuarios: lista, total: lista.length, pagina: 1, por_pagina: 10, paginas: 1, especialidades: ['Clínica'] });
 
 function montar(ruta = '/recepcion/configuracion', rol: 'recepcionista' | 'paciente' = 'recepcionista') {
-  vi.spyOn(auth, 'usuarioActual').mockResolvedValue({ id_usuario: 1, nombre: 'Elena', apellido: 'Martínez', email: 'operador@demo.test', rol });
+  vi.spyOn(auth, 'usuarioActual').mockResolvedValue({ id_usuario: 1, nombre: 'Elena', apellido: 'Martínez', email: 'operador@demo.test', rol, debe_cambiar_contrasena: false });
   render(
     <ProveedorSesion>
       <MemoryRouter initialEntries={[ruta]}>

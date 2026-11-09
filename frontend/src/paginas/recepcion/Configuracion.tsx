@@ -319,9 +319,9 @@ export function Configuracion() {
                   ['Recepción', 'Pacientes', 'Consultar, modificar, dar de baja y reactivar (los pacientes crean su cuenta desde el registro)'],
                   ['Recepción', 'Médicos', 'Consultar, crear, modificar, dar de baja y reactivar'],
                   ['Recepción', 'Otros recepcionistas', 'Solo consultar'],
-                  ['Todos los usuarios', 'Su propia cuenta', 'Cambiar su contraseña'],
+                  ['Todos los usuarios', 'Su propia cuenta', 'Cambiar su contraseña y editar su nombre y correo (el paciente, también su contacto)'],
                 ].map(([quien, sobre, permiso]) => (
-                  <tr key={sobre}>
+                  <tr key={quien + sobre}>
                     <td data-etiqueta="Quién">{quien}</td>
                     <td data-etiqueta="Sobre">{sobre}</td>
                     <td data-etiqueta="Permiso">{permiso}</td>
@@ -581,7 +581,7 @@ function DialogoProvisoria({ usuario, alCerrar, alGuardar }: { usuario: UsuarioG
     >
       <form id={idForm} onSubmit={enviar} noValidate>
         <p className="cfg-ayuda cfg-ayuda-dialogo">
-          Para {nombreCompleto(usuario)}. Se cerrarán sus sesiones abiertas y deberá entrar con esta contraseña. Mínimo 8 caracteres, con letras y números.
+          Para {nombreCompleto(usuario)}. Se cerrarán sus sesiones abiertas: deberá entrar con esta contraseña y elegir una propia antes de usar el sistema. Mínimo 8 caracteres, con letras y números.
         </p>
         {error !== null && (
           <div className="cfg-aviso es-error" role="alert">

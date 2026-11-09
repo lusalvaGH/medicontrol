@@ -190,10 +190,17 @@ describe('Turnos', () => {
       expect(await filaTurno(idA)).toMatchObject({ hora: '08:00:00', estado: 'pendiente', motivo_consulta: MOTIVO_TEMPORAL, id_paciente: pacientes[0].perfil });
     });
 
-    it('el horario ocupado responde 409; el mismo horario con otro médico se registra', async () => {
+    it('el horario ocupado responde 409; el mismo horario con otro médico se registra para otro paciente', async () => {
       const r = await crearTurno({ id_paciente: pacientes[1].perfil });
       expect([r.status, r.body.error.codigo]).toEqual([409, 'HORARIO_OCUPADO']);
-      expect((await crearTurno({ id_medico: otroMedico.perfil })).status).toBe(201);
+      expect((await crearTurno({ id_medico: otroMedico.perfil, id_paciente: pacientes[1].perfil })).status).toBe(201);
+    });
+
+    it('el mismo paciente no puede tener otro turno a la misma hora, aunque sea con otro médico (409 PACIENTE_OCUPADO)', async () => {
+      // Turno propio del paciente a las 16:30 con un médico; el otro médico está libre a esa hora
+      expect((await crearTurno({ hora: '16:30' })).status).toBe(201);
+      const r = await crearTurno({ id_medico: otroMedico.perfil, hora: '16:30' });
+      expect([r.status, r.body.error?.codigo, r.body.error?.campos]).toEqual([409, 'PACIENTE_OCUPADO', { hora: 'paciente_ocupado' }]);
     });
 
     it('detalle: 200 con los datos y sin notas médicas; inexistente 404', async () => {
@@ -313,10 +320,14 @@ describe('Turnos', () => {
       expect((await conToken(agRecep, 'post', '/api/turnos/999999/cancelacion')).status).toBe(404);
     });
 
-    it('[igual que PHP] el horario de un turno cancelado sigue ocupado', async () => {
+    it('un turno cancelado libera su horario: figura libre y se puede volver a dar (migración 001)', async () => {
       const r = await agRecep.get(`/api/medicos/${medico.perfil}/disponibilidad`).query({ fecha: dia2 });
-      expect(r.body.data.horarios.find((h: { hora: string }) => h.hora === '10:00').estado).toBe('ocupado');
-      expect((await crearTurno({ fecha: dia2, hora: '10:00' })).body.error.codigo).toBe('HORARIO_OCUPADO');
+      expect(r.body.data.horarios.find((h: { hora: string }) => h.hora === '10:00').estado).toBe('libre');
+      const otro = await crearTurno({ fecha: dia2, hora: '10:00', id_paciente: pacientes[2].perfil });
+      expect([otro.status, otro.body.data.turno.estado]).toEqual([201, 'pendiente']);
+      // El cancelado queda en el historial, sin cambios
+      expect(await filaTurno(idB)).toMatchObject({ estado: 'cancelado', hora: '10:00:00', ocupa_horario: null });
+      expect((await filaTurno(otro.body.data.turno.id_turno)).ocupa_horario).toBe(1);
     });
 
     it('un UPDATE con valores leídos desactualizados no modifica nada', async () => {
@@ -427,7 +438,7 @@ describe('Turnos', () => {
       const [filas] = await pool.query<any[]>('SELECT id_turno FROM turnos WHERE id_medico = ? AND fecha = ? ORDER BY hora, id_turno', [medico.perfil, dia1]);
       expect(r.body.data.turnos.map((t: { id_turno: number }) => t.id_turno)).toEqual(filas.map((f) => f.id_turno));
       expect(r.body.data.turnos[0]).toMatchObject({ hora: '08:00', notas_medicas: 'Nota de prueba' });
-      expect(Object.keys(r.body.data.turnos[0])).toEqual(['id_turno', 'fecha', 'hora', 'estado', 'motivo_consulta', 'notas_medicas', 'paciente', 'paciente_dni', 'obra_social', 'telefono']);
+      expect(Object.keys(r.body.data.turnos[0])).toEqual(['id_turno', 'fecha', 'hora', 'estado', 'motivo_consulta', 'notas_medicas', 'id_paciente', 'paciente', 'paciente_dni', 'obra_social', 'telefono']);
       const otro = await agOtroMedico.get('/api/medico/agenda').query({ fecha: dia1 });
       const propios = new Set(filas.map((f) => f.id_turno));
       expect(otro.body.data.turnos.length).toBeGreaterThan(0);
@@ -466,6 +477,81 @@ describe('Turnos', () => {
       expect((await baja()).status).toBe(200);
       // Ya inactivo, no se le pueden registrar turnos
       expect((await crearTurno({ id_paciente: p.perfil, hora: '15:30' })).body.error.codigo).toBe('PACIENTE_NO_DISPONIBLE');
+    });
+  });
+
+  describe('reglas nuevas: superposición del paciente, notas e historial del médico', () => {
+    const dia3 = sumarDias(hoy, 25);
+
+    it('un paciente no puede reservar ni reprogramar a un horario en el que ya tiene turno; al cancelar se libera', async () => {
+      const p = pacientes[2].perfil;
+      const primero = await crearTurno({ id_paciente: p, fecha: dia3, hora: '09:00' });
+      expect(primero.status).toBe(201);
+      expect((await crearTurno({ id_paciente: p, id_medico: otroMedico.perfil, fecha: dia3, hora: '09:00' })).body.error.codigo).toBe('PACIENTE_OCUPADO');
+
+      const segundo = (await crearTurno({ id_paciente: p, id_medico: otroMedico.perfil, fecha: dia3, hora: '10:00' })).body.data.turno.id_turno;
+      const mover = await conToken(agRecep, 'patch', `/api/turnos/${segundo}`, { fecha: dia3, hora: '09:00', estado: 'pendiente' });
+      expect([mover.status, mover.body.error.codigo]).toEqual([409, 'PACIENTE_OCUPADO']);
+
+      expect((await conToken(agRecep, 'post', `/api/turnos/${primero.body.data.turno.id_turno}/cancelacion`)).status).toBe(200);
+      expect((await conToken(agRecep, 'patch', `/api/turnos/${segundo}`, { fecha: dia3, hora: '09:00', estado: 'pendiente' })).status).toBe(200);
+    });
+
+    it('si dos reservas del mismo paciente pasan la verificación a la vez, la restricción única frena a la segunda', async () => {
+      const repo = app.get(TurnosRepository);
+      const original = repo.pacienteOcupado.bind(repo);
+      repo.pacienteOcupado = async () => false;
+      try {
+        const respuestas = await Promise.all(
+          [medico, otroMedico].map((m) => crearTurno({ id_paciente: pacientes[1].perfil, id_medico: m.perfil, fecha: dia3, hora: '15:00' })),
+        );
+        expect(respuestas.map((r) => [r.status, r.body.error?.codigo ?? null]).sort()).toEqual([
+          [201, null],
+          [409, 'PACIENTE_OCUPADO'],
+        ]);
+      } finally {
+        repo.pacienteOcupado = original;
+      }
+    });
+
+    it('el médico escribe las notas de sus turnos; otro médico, recepción y el paciente no', async () => {
+      const id = (await crearTurno({ id_paciente: pacientes[0].perfil, fecha: dia3, hora: '16:00' })).body.data.turno.id_turno;
+      const notas = (ag: Agente, valor: unknown) => conToken(ag, 'patch', `/api/medico/turnos/${id}/notas`, { notas_medicas: valor });
+
+      const ok = await notas(agMedico, '  Control normal.  ');
+      expect([ok.status, ok.body.data]).toEqual([200, { id_turno: id, notas_medicas: 'Control normal.' }]);
+      expect((await filaTurno(id)).notas_medicas).toBe('Control normal.');
+      // Sin cambios también responde 200
+      expect((await notas(agMedico, 'Control normal.')).status).toBe(200);
+
+      const ajeno = await notas(agOtroMedico, 'Intento ajeno');
+      expect([ajeno.status, ajeno.body.error.codigo]).toEqual([404, 'TURNO_NO_ENCONTRADO']);
+      expect((await notas(agRecep, 'x')).status).toBe(403);
+      expect((await notas(agPaciente, 'x')).status).toBe(403);
+      expect((await notas(agMedico, 'a'.repeat(5001))).status).toBe(400);
+      expect((await notas(agMedico, 123)).status).toBe(400);
+      expect((await filaTurno(id)).notas_medicas).toBe('Control normal.');
+
+      expect((await notas(agMedico, '   ')).body.data.notas_medicas).toBeNull();
+      expect((await filaTurno(id)).notas_medicas).toBeNull();
+      // Recepción y paciente siguen sin ver notas
+      expect((await agRecep.get(`/api/turnos/${id}`)).body.data.turno).not.toHaveProperty('notas_medicas');
+    });
+
+    it('el historial muestra solo los turnos del paciente con ese médico', async () => {
+      const r = await agMedico.get(`/api/medico/pacientes/${pacientes[0].perfil}/historial`);
+      expect(r.status).toBe(200);
+      const [filas] = await pool.query<any[]>('SELECT id_turno FROM turnos WHERE id_medico = ? AND id_paciente = ? ORDER BY fecha DESC, hora DESC, id_turno DESC', [
+        medico.perfil,
+        pacientes[0].perfil,
+      ]);
+      expect(r.body.data.turnos.map((t: { id_turno: number }) => t.id_turno)).toEqual(filas.map((f) => f.id_turno));
+      expect(r.body.data.paciente).toMatchObject({ id_paciente: pacientes[0].perfil, paciente_dni: pacientes[0].dni });
+
+      const sinTurnos = await tmp.crearUsuario('paciente', CLAVE);
+      expect((await agMedico.get(`/api/medico/pacientes/${sinTurnos.perfil}/historial`)).status).toBe(404);
+      expect((await agRecep.get(`/api/medico/pacientes/${pacientes[0].perfil}/historial`)).status).toBe(403);
+      expect((await agPaciente.get(`/api/medico/pacientes/${pacientes[0].perfil}/historial`)).status).toBe(403);
     });
   });
 });

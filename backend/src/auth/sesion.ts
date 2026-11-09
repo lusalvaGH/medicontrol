@@ -15,6 +15,8 @@ export interface UsuarioSesion {
   apellido: string;
   email: string;
   rol: Rol;
+  /** Tiene una contraseña provisoria: solo puede cambiarla (migración 002). */
+  debe_cambiar_contrasena: boolean;
 }
 
 declare module 'express-session' {

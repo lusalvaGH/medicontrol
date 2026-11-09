@@ -19,9 +19,13 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 COPY --from=compilacion /app/dist ./dist
 COPY scripts/crear-cuentas-iniciales.mjs ./scripts/
+# Migraciones versionadas del esquema (ver docs/migracion-datos.md)
+COPY migraciones ./migraciones
 USER node
 EXPOSE 3000
 # /api/health responde 200 solo si la base de datos contesta (503 si no)
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
   CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["node", "dist/main.js"]
+# Antes de la API se aplican las migraciones pendientes (solo esquema, nunca datos; se niegan a
+# tocar medicontrol_db, medicontrol_test o medicontrol_demo). Si una falla, el contenedor no arranca.
+CMD ["sh", "-c", "node dist/migraciones/cli.js --aplicar && exec node dist/main.js"]

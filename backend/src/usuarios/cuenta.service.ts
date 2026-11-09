@@ -6,8 +6,10 @@ import { hashContrasena, huellaDeCredencial, nuevoTokenCsrf } from '../auth/sesi
 import { ApiException } from '../comun/api-exception';
 import { Entrada, campoSinRecortar } from '../comun/entrada';
 import { CONTRASENA_MAXIMA, CONTRASENA_MENSAJE, contrasenaValida } from '../reglas/contrasena.reglas';
+import { validarPerfilPaciente, validarPersona } from '../reglas/personas.validador';
 import { strlenBytes } from '../reglas/php';
-import { UsuariosRepository } from './usuarios.repository';
+import { fechaHoy } from '../reglas/zona-horaria';
+import { FilaUsuario, UsuariosRepository } from './usuarios.repository';
 
 export const MAX_FALLOS_CONTRASENA = 5;
 export const BLOQUEO_CONTRASENA_MS = 15 * 60 * 1000;
@@ -53,6 +55,74 @@ export class CuentaService {
         await guardar(pedido.session as SesionExpress);
       }
     });
+  }
+
+  /** Datos propios para «Mi cuenta». Nunca incluye la contraseña. */
+  async datosPropios(idUsuario: number): Promise<DatosCuenta> {
+    const fila = await this.usuarios.detalle(idUsuario);
+    if (!fila) {
+      throw new ApiException(401, 'SESION_INVALIDA', 'La sesión ya no es válida. Iniciá sesión nuevamente.');
+    }
+
+    return presentarCuenta(fila);
+  }
+
+  /**
+   * Edición de los datos propios. Cada persona cambia su nombre, su apellido y su correo; el
+   * paciente además su teléfono, dirección, fecha de nacimiento, género y obra social. El DNI,
+   * el rol, el estado, la especialidad y la matrícula los gestiona recepción. Cambiar el correo
+   * (con el que se inicia sesión) exige la contraseña actual, con el mismo límite de intentos
+   * que el cambio de contraseña.
+   */
+  async actualizarDatos(pedido: Request, idUsuario: number, entrada: Entrada, ahora = new Date(this.reloj())): Promise<DatosCuenta> {
+    let resultado: DatosCuenta | null = null;
+    await this.deAUno(pedido.sessionID, async () => {
+      await recargar(pedido);
+      const sesion = pedido.session as SesionExpress;
+      try {
+        const actual = await this.usuarios.detalle(idUsuario);
+        if (!actual) {
+          throw new ApiException(401, 'SESION_INVALIDA', 'La sesión ya no es válida. Iniciá sesión nuevamente.');
+        }
+        const esPaciente = actual.rol === 'paciente';
+
+        // El DNI no se edita acá: se valida con el actual para reutilizar las mismas reglas
+        const persona = validarPersona({ ...entrada, dni: actual.dni });
+        const perfil = esPaciente ? validarPerfilPaciente(entrada, fechaHoy(ahora)) : null;
+        const errores = { ...persona.errores, ...(perfil?.errores ?? {}) };
+        if (Object.keys(errores).length > 0) {
+          throw new ApiException(400, 'DATOS_INVALIDOS', 'Revisá los campos marcados.', errores);
+        }
+
+        const cambiaCorreo = persona.datos.email !== String(actual.email).toLowerCase();
+        if (cambiaCorreo) {
+          this.exigirSinBloqueo(sesion);
+          const contrasena = campoSinRecortar(entrada, 'contrasena_actual') ?? '';
+          if (contrasena === '') {
+            throw new ApiException(400, 'DATOS_INVALIDOS', 'Para cambiar el correo, ingresá tu contraseña actual.', { contrasena_actual: 'requerido' });
+          }
+          if ((await this.hashSiActualCorrecta(idUsuario, contrasena)) === null) {
+            this.registrarFallo(sesion);
+            throw new ApiException(422, 'CONTRASENA_ACTUAL_INCORRECTA', 'La contraseña actual es incorrecta.', { contrasena_actual: 'incorrecta' });
+          }
+          if ((await this.usuarios.datosDuplicados(persona.datos.email, actual.dni, idUsuario)).includes('email')) {
+            throw new ApiException(409, 'DATO_DUPLICADO', 'Ese correo ya está registrado.', { email: 'Ese correo ya está registrado.' });
+          }
+        }
+
+        await this.usuarios.enTransaccion(async (db) => {
+          await this.usuarios.actualizarPersona(db, idUsuario, persona.datos);
+          if (perfil) {
+            await this.usuarios.actualizarPerfilPaciente(db, idUsuario, perfil.datos);
+          }
+        });
+        resultado = await this.datosPropios(idUsuario);
+      } finally {
+        await guardar(pedido.session as SesionExpress);
+      }
+    });
+
+    return resultado as unknown as DatosCuenta;
   }
 
   private exigirSinBloqueo(sesion: SesionExpress): void {
@@ -120,6 +190,41 @@ export class CuentaService {
       }
     }
   }
+}
+
+/** Datos de «Mi cuenta». Los campos de perfil solo aparecen para el rol que los tiene. */
+export interface DatosCuenta {
+  nombre: string;
+  apellido: string;
+  dni: string;
+  email: string;
+  rol: string;
+  especialidad?: string | null;
+  matricula?: string | null;
+  telefono?: string | null;
+  direccion?: string | null;
+  fecha_nacimiento?: string | null;
+  genero?: string | null;
+  obra_social?: string | null;
+}
+
+function presentarCuenta(fila: FilaUsuario): DatosCuenta {
+  const base = { nombre: fila.nombre, apellido: fila.apellido, dni: fila.dni, email: fila.email, rol: fila.rol };
+  if (fila.rol === 'paciente') {
+    return {
+      ...base,
+      telefono: fila.telefono,
+      direccion: fila.direccion ?? null,
+      fecha_nacimiento: fila.fecha_nacimiento ?? null,
+      genero: fila.genero ?? null,
+      obra_social: fila.obra_social,
+    };
+  }
+  if (fila.rol === 'medico') {
+    return { ...base, especialidad: fila.especialidad, matricula: fila.matricula };
+  }
+
+  return base;
 }
 
 function exigirCampos(datos: Record<string, string | null>): void {

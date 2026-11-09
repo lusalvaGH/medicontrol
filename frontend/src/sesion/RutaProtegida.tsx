@@ -3,6 +3,8 @@ import type { Rol } from '../api/tipos';
 import { Cargando } from '../componentes/Estados';
 import { INICIO_POR_ROL, useSesion } from './SesionContexto';
 
+export const RUTA_MI_CUENTA = '/mi-cuenta';
+
 /**
  * Solo deja pasar a usuarios con alguno de los roles indicados. Es una ayuda para la
  * navegación: el permiso real lo controla el backend en cada pedido.
@@ -19,6 +21,10 @@ export function RutaProtegida({ roles }: { roles: Rol[] }) {
   }
   if (!roles.includes(sesion.usuario.rol)) {
     return <Navigate to={INICIO_POR_ROL[sesion.usuario.rol]} replace />;
+  }
+  // Contraseña provisoria: hasta cambiarla, solo «Mi cuenta» (el backend también lo exige)
+  if (sesion.usuario.debe_cambiar_contrasena && ubicacion.pathname !== RUTA_MI_CUENTA) {
+    return <Navigate to={RUTA_MI_CUENTA} replace />;
   }
 
   return <Outlet />;

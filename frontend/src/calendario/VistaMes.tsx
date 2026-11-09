@@ -72,7 +72,10 @@ export function VistaMes() {
             return <div key={`vacio-${i}`} className="dia-mes dia-mes-otro" aria-hidden="true" />;
           }
           const conteo = dias[dia];
-          const total = conteo?.total ?? 0;
+          // Solo cuentan los vigentes; un día con turnos todos cancelados lo indica aparte
+          const cancelados = conteo?.cancelado ?? 0;
+          const total = (conteo?.total ?? 0) - cancelados;
+          const descripcion = total > 0 ? `${total} turno${total === 1 ? '' : 's'}` : cancelados > 0 ? `${cancelados} cancelado${cancelados === 1 ? '' : 's'}` : '0 turnos';
 
           return (
             <button
@@ -80,14 +83,12 @@ export function VistaMes() {
               type="button"
               role="gridcell"
               className={`dia-mes ${dia === hoy ? 'dia-mes-hoy' : ''} ${dia === diaElegido ? 'dia-mes-elegido' : ''}`}
-              aria-label={`${fechaLarga(dia)}${dia === hoy ? ' (hoy)' : ''}: ${total} turno${total === 1 ? '' : 's'}`}
+              aria-label={`${fechaLarga(dia)}${dia === hoy ? ' (hoy)' : ''}: ${descripcion}`}
               onClick={() => setDiaElegido(dia)}
             >
               <span className="dia-mes-numero">{Number(dia.slice(8))}</span>
-              {total > 0 ? (
-                <span className={`dia-mes-cantidad etiqueta-${estadoPredominante(conteo)}`}>
-                  {total} turno{total === 1 ? '' : 's'}
-                </span>
+              {total > 0 || cancelados > 0 ? (
+                <span className={`dia-mes-cantidad etiqueta-${estadoPredominante(conteo)}`}>{descripcion}</span>
               ) : (
                 <span className="dia-mes-vacio">Sin turnos</span>
               )}

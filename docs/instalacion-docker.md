@@ -158,8 +158,9 @@ docker compose up -d
 ```
 
 Docker espera a que cada servicio esté sano antes de iniciar el siguiente: primero MariaDB
-(que en el primer arranque crea la base y las tablas), después el backend y por último el
-frontend. Puede tardar un minuto. Mirá el estado con:
+(que en el primer arranque crea la base y las tablas), después el backend (que antes de
+arrancar aplica las migraciones pendientes del esquema) y por último el frontend. Puede tardar
+un minuto. Mirá el estado con:
 
 ```powershell
 docker compose ps
@@ -283,6 +284,14 @@ Desktop → **Images** si necesitás espacio. Para volver a instalar, repetí de
 
 ---
 
+## Traer los datos de la versión PHP (opcional)
+
+La base de Docker nace vacía. Para usar los usuarios, pacientes, médicos y turnos de la versión
+PHP, en lugar del paso 11 se importan con la herramienta de migración, que conserva los
+identificadores y verifica la copia. **No ejecutes el paso 11 antes:** la importación solo se
+hace sobre una base vacía. El procedimiento completo, con respaldo y ensayo, está en
+[migracion-datos.md](migracion-datos.md).
+
 ## Problemas habituales
 
 ### Puerto ocupado
@@ -322,6 +331,8 @@ docker compose logs backend --tail 50
 ```
 
 - `Faltan variables de entorno: ...`: falta una variable obligatoria (ver más abajo).
+- `ABORTADO: Falló la migración …`: una migración del esquema no se pudo aplicar y el backend
+  no arranca. Ver «Si una migración falla» en [migracion-datos.md](migracion-datos.md).
 - `Access denied for user`: la contraseña de `.env` no coincide con la del volumen. Pasa si
   cambiaste `MARIADB_PASSWORD` después del primer arranque (ver "Volumen con datos anteriores").
 - `ECONNREFUSED` o `ENOTFOUND mariadb`: MariaDB no está disponible. Revisá la sección

@@ -12,6 +12,8 @@ interface ValorSesion {
   sesion: EstadoSesion;
   iniciarSesion: (email: string, contrasena: string) => Promise<UsuarioSesion>;
   cerrarSesion: () => Promise<void>;
+  /** Vuelve a leer el usuario (después de cambiar datos o la contraseña provisoria). */
+  refrescar: () => Promise<void>;
 }
 
 const Contexto = createContext<ValorSesion | null>(null);
@@ -61,7 +63,12 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const valor = useMemo(() => ({ sesion, iniciarSesion, cerrarSesion }), [sesion, iniciarSesion, cerrarSesion]);
+  const refrescar = useCallback(async () => {
+    const usuario = await auth.usuarioActual();
+    setSesion(usuario ? { estado: 'autenticado', usuario } : { estado: 'anonimo', motivo: 'vencida' });
+  }, []);
+
+  const valor = useMemo(() => ({ sesion, iniciarSesion, cerrarSesion, refrescar }), [sesion, iniciarSesion, cerrarSesion, refrescar]);
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }
