@@ -4,6 +4,10 @@ Sistema web para gestión hospitalaria, administración de turnos médicos y con
 
 Desarrollado con **PHP 8+**, **MySQL / MariaDB (PDO)** y diseño responsive moderno sin dependencias pesadas.
 
+> **Versión NestJS + React con Docker** (rama `feature/migracion-nestjs`): se instala sin XAMPP
+> siguiendo [docs/instalacion-docker.md](docs/instalacion-docker.md). Las instrucciones de abajo
+> corresponden a la versión PHP original.
+
 ---
 
 ## 🚀 Requisitos Previos

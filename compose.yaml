@@ -1,0 +1,83 @@
+# ============================================================================
+# MEDICONTROL - Entorno local con Docker Compose (demostración / desarrollo)
+#
+#   mariadb   MariaDB 10.4.32 con una base nueva e independiente (medicontrol_local)
+#   backend   API NestJS, solo accesible dentro de la red de Docker
+#   frontend  React compilado + Nginx, que reenvía /api al backend
+#
+# Antes del primer arranque: copiá .env.example como .env y completalo.
+# Guía completa: docs/instalacion-docker.md
+#
+# No es un despliegue productivo: no hay HTTPS y la aplicación solo escucha en
+# 127.0.0.1 de la computadora que la ejecuta.
+# ============================================================================
+name: medicontrol
+
+services:
+  mariadb:
+    image: mariadb:10.4.32
+    restart: unless-stopped
+    environment:
+      # Nombre fijo: el script de cuentas iniciales solo trabaja sobre esta base
+      MARIADB_DATABASE: medicontrol_local
+      MARIADB_USER: ${MARIADB_USER:-medicontrol}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Falta MARIADB_PASSWORD en .env (ver .env.example)}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Falta MARIADB_ROOT_PASSWORD en .env (ver .env.example)}
+      TZ: America/Argentina/Buenos_Aires
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      # Datos persistentes: sobreviven a "docker compose down" (no a "down -v")
+      - datos_mariadb:/var/lib/mysql
+      # Esquema inicial: MariaDB lo ejecuta solo cuando el volumen de datos está vacío
+      - ./docker/mariadb/01-esquema.sql:/docker-entrypoint-initdb.d/01-esquema.sql:ro
+    # Sin "ports": la base no se publica fuera de Docker; solo la ve el backend
+    healthcheck:
+      # --connect usa TCP, así que falla mientras corre la inicialización (que no abre la red)
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [interna]
+
+  backend:
+    # Imagen local "medicontrol-backend" (la borra "docker compose down --rmi local")
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: medicontrol_local
+      DB_USER: ${MARIADB_USER:-medicontrol}
+      DB_PASSWORD: ${MARIADB_PASSWORD:?Falta MARIADB_PASSWORD en .env (ver .env.example)}
+      SESSION_SECRET: ${SESSION_SECRET:?Falta SESSION_SECRET en .env (ver .env.example)}
+      SESSION_INACTIVIDAD_MINUTOS: ${SESSION_INACTIVIDAD_MINUTOS:-24}
+      # Sin HTTPS en este entorno: "auto" no marca la cookie como Secure sobre HTTP
+      COOKIE_SECURE: auto
+      # El backend está detrás del Nginx del contenedor frontend
+      TRUST_PROXY: "true"
+    # Sin "ports": se accede a la API a través del frontend (http://localhost:8080/api)
+    networks: [interna]
+
+  frontend:
+    # Imagen local "medicontrol-frontend" (la borra "docker compose down --rmi local")
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      # Solo en esta computadora (127.0.0.1); cambiá FRONTEND_PUERTO si el 8080 está ocupado
+      - "127.0.0.1:${FRONTEND_PUERTO:-8080}:8080"
+    networks: [interna]
+
+volumes:
+  datos_mariadb:
+
+networks:
+  interna:

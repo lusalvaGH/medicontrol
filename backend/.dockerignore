@@ -1,0 +1,12 @@
+# Nada de esto entra en la imagen: dependencias y compilados se generan adentro,
+# y los .env (con secretos) nunca se copian.
+node_modules
+dist
+coverage
+.env
+.env.*
+*.log
+test
+.htaccess
+Dockerfile
+.dockerignore

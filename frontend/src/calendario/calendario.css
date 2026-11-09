@@ -1,0 +1,859 @@
+/* Calendario de recepción (Día, Semana y Mes) y alta de turnos, con el aspecto de las
+   pantallas PHP (panel/recepcionista*.php). Usa las variables de ../estilos.css. */
+
+.boton-peligro-lleno {
+  background: var(--error-texto);
+  color: #fff;
+}
+.boton-peligro-lleno:hover:not(:disabled) {
+  background: #991b1b;
+}
+.rotulo {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 0.25rem;
+}
+.pista {
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primario);
+  background: var(--primario-claro);
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  margin: 0 0 1rem;
+}
+.pregunta {
+  font-weight: 700;
+  color: var(--error-texto);
+  margin-right: auto;
+}
+.alinear-derecha {
+  text-align: right;
+}
+
+/* Tarjetas de totales (.grid-4 / .stat-card) */
+.totales {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.tarjeta-total {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-grande);
+  padding: 1rem 1.25rem;
+  display: grid;
+  gap: 0.2rem;
+}
+.tarjeta-total span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+.tarjeta-total strong {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--texto-oscuro);
+  line-height: 1.1;
+}
+.tarjeta-total-confirmado strong {
+  color: #166534;
+}
+.tarjeta-total-pendiente strong {
+  color: #b45309;
+}
+.tarjeta-total-en_curso strong {
+  color: #3730a3;
+}
+
+/* Barra de filtros (.filter-bar-card) */
+.barra-filtros {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-grande);
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--superficie-suave);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 0.3rem 0.75rem;
+  flex: 1 1 260px;
+  max-width: 380px;
+}
+.buscador input {
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0;
+  width: 100%;
+}
+.buscador input:focus {
+  outline: none;
+}
+.buscador:focus-within {
+  outline: 2px solid var(--primario);
+  outline-offset: 1px;
+}
+.selector-especialidad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--texto-oscuro);
+  min-width: 0;
+  max-width: 100%;
+}
+.selector-especialidad select {
+  font-weight: 700;
+  background: var(--superficie-suave);
+  max-width: 100%;
+}
+
+/* Navegación y pestañas (.view-tabs / .tab-btn) */
+.barra-calendario {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.navegacion-fecha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.navegacion-fecha .boton {
+  padding: 0.4rem 0.75rem;
+}
+.navegacion-fecha input {
+  font-weight: 700;
+  font-size: 0.82rem;
+  background: var(--superficie-suave);
+}
+.titulo-periodo {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--texto-oscuro);
+  margin: 0 0.25rem;
+}
+.pestanas {
+  display: flex;
+  background: var(--borde);
+  padding: 3px;
+  border-radius: var(--radio);
+  font-size: 0.8rem;
+}
+.pestana {
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--texto-suave);
+  text-decoration: none;
+}
+.pestana-activa {
+  background: #fff;
+  color: var(--primario);
+  box-shadow: var(--sombra-chica);
+}
+
+/* Tarjeta de turno (.slot-box / .week-slot-card): borde izquierdo y fondo por estado */
+.tarjeta-turno {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--texto);
+  background: var(--superficie-suave);
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--primario);
+  border-radius: var(--radio);
+  padding: 0.75rem 0.85rem;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.tarjeta-turno:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--sombra-media);
+}
+.tarjeta-turno-confirmado {
+  border-left-color: #15803d;
+  background: #f0fdf4;
+}
+.tarjeta-turno-pendiente {
+  border-left-color: #b45309;
+  background: #fffbeb;
+}
+.tarjeta-turno-en_curso {
+  border-left-color: #3730a3;
+  background: #f5f3ff;
+}
+.tarjeta-turno-atendido {
+  border-left-color: #0369a1;
+  background: #f0f9ff;
+}
+.tarjeta-turno-cancelado {
+  border-left-color: #b91c1c;
+  background: #fef2f2;
+}
+.tarjeta-turno-seleccionada {
+  outline: 2px solid var(--primario);
+  box-shadow: 0 0 15px rgba(0, 71, 151, 0.3);
+}
+.tarjeta-turno-titulo strong,
+.tarjeta-turno-paciente {
+  font-weight: 800;
+  color: var(--texto-oscuro);
+}
+.tarjeta-turno-medico,
+.tarjeta-turno-motivo {
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+.tarjeta-turno-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+.tarjeta-turno-compacta {
+  font-size: 0.8rem;
+  padding: 0.6rem 0.7rem;
+}
+
+/* Vista Día: línea de tiempo y ficha del paciente (.timeline-layout) */
+.linea-de-tiempo {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.25rem;
+  align-items: start;
+}
+.horarios-del-dia {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.fila-horario {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+.fila-horario-hora {
+  font-weight: 800;
+  color: var(--texto-suave);
+  padding-top: 0.75rem;
+  font-size: 0.85rem;
+}
+.ficha-paciente {
+  background: var(--superficie-suave);
+  position: sticky;
+  top: 6rem;
+}
+.ficha-paciente-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: var(--texto-oscuro);
+}
+.ficha-paciente-persona {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.25rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--borde);
+}
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primario);
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.4rem;
+}
+.ficha-paciente-datos {
+  margin: 0;
+  padding: 1rem 0;
+}
+.ficha-paciente-datos dt {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--texto-suave);
+  text-transform: uppercase;
+  margin-top: 0.8rem;
+}
+.ficha-paciente-datos dt:first-child {
+  margin-top: 0;
+}
+.ficha-paciente-datos dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--texto-oscuro);
+}
+.ficha-paciente-datos .destacado {
+  color: var(--primario);
+  font-weight: 700;
+}
+.ficha-paciente-acciones {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Vista Semana (.weekly-grid-container / .week-col)
+   Las siete columnas reparten el ancho disponible en partes iguales: minmax(0, 1fr) impide que
+   el contenido de un día ensanche su columna y empuje a las demás. Para que entren siete
+   columnas legibles, la vista Semana usa más ancho de página que el resto (hasta 1440 px).
+   Debajo de 1200 px los días pasan a filas, y debajo de 768 px van uno por fila. */
+.contenido:has(.grilla-semana) {
+  max-width: 1440px;
+}
+.grilla-semana {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.columna-dia {
+  min-width: 0;
+  background: var(--superficie);
+  border: 2px solid transparent;
+  border-radius: var(--radio-grande);
+  padding: 0.85rem 0.6rem;
+  min-height: 420px;
+  display: grid;
+  /* La pista interna mide lo que la columna, no lo que pida la tarjeta más ancha */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  align-content: start;
+}
+.columna-dia-encabezado h2,
+.columna-dia-encabezado p {
+  overflow-wrap: break-word;
+}
+
+/* Tarjeta de la vista Semana: el texto largo se parte en líneas, sin recortar información */
+.tarjeta-turno-compacta {
+  min-width: 0;
+}
+.tarjeta-turno-compacta .tarjeta-turno-paciente,
+.tarjeta-turno-compacta .tarjeta-turno-medico {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tarjeta-turno-compacta .tarjeta-turno-pie {
+  /* Si la hora y el estado no entran en una línea, el estado baja a la siguiente */
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+.tarjeta-turno-compacta .etiqueta {
+  max-width: 100%;
+  white-space: normal;
+}
+.columna-dia-hoy {
+  border-color: var(--primario);
+}
+.columna-dia-encabezado {
+  text-align: center;
+  border-bottom: 1px solid var(--borde);
+  padding-bottom: 0.6rem;
+  color: inherit;
+  text-decoration: none;
+}
+.columna-dia-encabezado h2 {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--texto-oscuro);
+  margin: 0;
+}
+.columna-dia-encabezado p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.columna-dia-encabezado:hover h2 {
+  color: var(--primario);
+  text-decoration: underline;
+}
+.columna-dia-vacia {
+  font-size: 0.75rem;
+  color: var(--texto-claro);
+  text-align: center;
+  margin: 0.5rem 0;
+}
+
+/* Vista Mes (.month-grid-container / .month-day-card) */
+.grilla-mes {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+.grilla-mes-encabezado {
+  text-align: center;
+  font-weight: 800;
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  padding: 0.5rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+}
+.dia-mes {
+  font: inherit;
+  text-align: left;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.6rem;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.dia-mes:hover {
+  border-color: var(--primario);
+  transform: translateY(-2px);
+}
+.dia-mes-otro {
+  background: var(--superficie-suave);
+  opacity: 0.45;
+  cursor: default;
+}
+.dia-mes-otro:hover {
+  transform: none;
+  border-color: var(--borde);
+}
+.dia-mes-hoy {
+  border-color: var(--primario);
+  background: var(--primario-sutil);
+}
+.dia-mes-elegido {
+  border: 2px solid var(--primario);
+  box-shadow: 0 0 0 3px rgba(0, 71, 151, 0.12);
+}
+.dia-mes-numero {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--texto-oscuro);
+}
+.dia-mes-hoy .dia-mes-numero {
+  color: var(--primario);
+}
+.dia-mes-cantidad {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  text-align: center;
+}
+.dia-mes-vacio {
+  font-size: 0.68rem;
+  color: var(--texto-claro);
+}
+
+/* Lista de turnos de un día (vista Mes) */
+.lista-dia {
+  list-style: none;
+  margin: -1.25rem;
+  padding: 0;
+}
+.lista-dia-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8rem 1.25rem;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--borde);
+  cursor: pointer;
+}
+.lista-dia-item:hover {
+  background: var(--superficie-suave);
+}
+.lista-dia-info {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.hora-pastilla {
+  background: var(--primario-claro);
+  color: var(--primario);
+  font-weight: 800;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+/* Ventanas emergentes (.turn-modal-*) */
+.ventana-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.ventana {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--sombra-grande);
+  overflow: hidden;
+}
+.ventana:focus {
+  outline: none;
+}
+.ventana-angosta {
+  max-width: 520px;
+}
+.ventana-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--superficie-suave);
+  border-bottom: 1px solid var(--borde);
+}
+.ventana-encabezado h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--primario);
+}
+.ventana-encabezado-oscuro {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+.ventana-encabezado-oscuro h2,
+.ventana-encabezado-oscuro .ventana-cerrar {
+  color: #fff;
+}
+.ventana-cerrar {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--texto-claro);
+  cursor: pointer;
+  text-decoration: none;
+  padding: 0.2rem 0.4rem;
+}
+.ventana-cuerpo {
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+.ventana-pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--superficie-suave);
+  border-top: 1px solid var(--borde);
+}
+.formulario-ventana {
+  display: grid;
+  gap: 0.9rem;
+}
+.horario-elegido {
+  background: var(--primario-claro);
+  color: var(--primario);
+  font-weight: 800;
+}
+
+/* Detalle del turno */
+.detalle-resumen {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+.detalle-hora {
+  font-size: 1.05rem;
+  color: var(--primario);
+}
+.detalle-grilla {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.detalle-dato {
+  display: grid;
+  gap: 0.15rem;
+  background: var(--superficie-suave);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+.detalle-dato strong {
+  color: var(--texto-oscuro);
+}
+.detalle-especialidad {
+  font-size: 0.75rem;
+  color: var(--primario);
+  font-weight: 700;
+}
+.detalle-motivo {
+  background: var(--superficie-suave);
+  border-left: 4px solid var(--primario);
+  padding: 0.8rem;
+  border-radius: var(--radio);
+}
+.detalle-motivo p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+/* Aviso flotante (.toast-notification) */
+.aviso-flotante {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translate(-50%, 200%);
+  background: #0f172a;
+  color: #fff;
+  padding: 0.8rem 1.4rem;
+  border-radius: 30px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  z-index: 60;
+  max-width: calc(100vw - 2rem);
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+.aviso-flotante:empty {
+  visibility: hidden;
+}
+.aviso-flotante-visible {
+  transform: translate(-50%, 0);
+}
+.aviso-flotante-error {
+  background: var(--error-texto);
+}
+
+/* Registrar nuevo turno (.modal-card de recepcionista_turno_nuevo.php) */
+.tarjeta-formulario {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  box-shadow: var(--sombra-media);
+  overflow: hidden;
+}
+.tarjeta-formulario-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--borde);
+}
+.tarjeta-formulario-encabezado h1 {
+  color: var(--primario);
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0;
+}
+.tarjeta-formulario-encabezado p {
+  margin: 0.2rem 0 0;
+}
+.tarjeta-formulario-cuerpo {
+  padding: 1.25rem 1.5rem;
+  display: grid;
+  gap: 1rem;
+}
+.tarjeta-formulario-pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.5rem -1.5rem -1.25rem;
+  padding: 1rem 1.5rem;
+  background: var(--superficie-suave);
+  border-top: 1px solid var(--borde);
+}
+.paciente-elegido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--primario-sutil);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 0.6rem 0.8rem;
+}
+.resultados-pacientes {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  max-height: 180px;
+  overflow: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+.resultados-pacientes button {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--borde);
+  background: #fff;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.resultados-pacientes button:hover {
+  background: var(--superficie-suave);
+}
+
+/* Pantallas medianas y chicas (mismos cortes que PHP: 1199 y 767 px) */
+@media (max-width: 1199px) {
+  /* Siete columnas ya no entran: los días se acomodan en filas, en orden, de al menos 190 px */
+  .grilla-semana {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+  }
+  .columna-dia {
+    min-height: 160px;
+  }
+  .linea-de-tiempo {
+    grid-template-columns: 1fr;
+  }
+  .ficha-paciente {
+    position: static;
+  }
+  .totales {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 767px) {
+  .totales {
+    gap: 0.5rem;
+  }
+  .tarjeta-total {
+    padding: 0.7rem 0.9rem;
+  }
+  .tarjeta-total strong {
+    font-size: 1.3rem;
+  }
+  .buscador {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .selector-especialidad,
+  .selector-especialidad select {
+    width: 100%;
+  }
+  .barra-filtros {
+    padding: 0.75rem;
+  }
+  .barra-calendario {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pestana {
+    flex: 1;
+    text-align: center;
+  }
+  /* El título va arriba y las flechas quedan juntas debajo */
+  .titulo-periodo {
+    order: -1;
+    flex-basis: 100%;
+    margin: 0 0 0.25rem;
+  }
+  /* La semana se lee día por día, uno debajo del otro */
+  .grilla-semana {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .columna-dia {
+    min-height: 0;
+  }
+  .grilla-mes {
+    gap: 0.25rem;
+  }
+  .grilla-mes-encabezado {
+    padding: 0.35rem 0;
+    font-size: 0.68rem;
+  }
+  .dia-mes {
+    min-height: 64px;
+    padding: 0.35rem;
+  }
+  .dia-mes-cantidad {
+    font-size: 0.62rem;
+    padding: 0.15rem 0.2rem;
+  }
+  .dia-mes-vacio {
+    display: none;
+  }
+  .detalle-grilla {
+    grid-template-columns: 1fr;
+  }
+  .fila-horario {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+  .fila-horario-hora {
+    padding-top: 0;
+  }
+  .ventana-pie .boton {
+    flex: 1 1 auto;
+  }
+  .tarjeta-formulario-encabezado,
+  .tarjeta-formulario-cuerpo {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .tarjeta-formulario-pie {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

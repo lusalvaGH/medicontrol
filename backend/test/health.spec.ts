@@ -1,0 +1,66 @@
+import { INestApplication, Logger } from '@nestjs/common';
+import request from 'supertest';
+import { POOL_DB } from '../src/database/database.module';
+import { crearApp } from './helpers/app-prueba';
+
+/**
+ * Prueba de integración contra MariaDB. Solo lee (SELECT 1) y exige una base de pruebas:
+ * se niega a correr contra cualquier base cuyo nombre no empiece con "medicontrol_test".
+ */
+describe('GET /api/health', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await crearApp();
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  it('responde 200 con la base disponible y el mismo formato que la API PHP', async () => {
+    const r = await request(app.getHttpServer()).get('/api/health');
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({ ok: true, data: { estado: 'ok', base_de_datos: 'ok' } });
+    expect(r.headers['cache-control']).toBe('no-store');
+    expect(r.headers['x-content-type-options']).toBe('nosniff');
+    expect(r.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('es pública y no crea una sesión', async () => {
+    const r = await request(app.getHttpServer()).get('/api/health');
+    expect(r.headers['set-cookie']).toBeUndefined();
+  });
+
+  it('usa la base de pruebas configurada', async () => {
+    const pool = app.get(POOL_DB);
+    const [filas] = await pool.query('SELECT DATABASE() AS base');
+    expect(filas[0].base).toBe(process.env.DB_NAME);
+  });
+
+  it('una ruta inexistente responde 404 RUTA_NO_ENCONTRADA', async () => {
+    const r = await request(app.getHttpServer()).get('/api/no-existe');
+    expect(r.status).toBe(404);
+    expect(r.body).toEqual({ ok: false, error: { codigo: 'RUTA_NO_ENCONTRADA', mensaje: 'La ruta solicitada no existe.' } });
+  });
+
+  it('un error inesperado responde 500 genérico y el log no guarda la query (puede tener DNI o correos)', async () => {
+    const espia = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    try {
+      const r = await request(app.getHttpServer()).get('/api/prueba/error-interno?buscar=30111222&email=persona%40ejemplo.test');
+      expect(r.status).toBe(500);
+      expect(r.body).toEqual({ ok: false, error: { codigo: 'ERROR_INTERNO', mensaje: 'Ocurrió un error interno. Intentá nuevamente más tarde.' } });
+      expect(JSON.stringify(r.body)).not.toContain('falla simulada');
+      expect(espia).toHaveBeenCalledTimes(1);
+      const registrado = String(espia.mock.calls[0][0]);
+      expect(registrado).toMatch(/^GET \/api\/prueba\/error-interno: falla simulada de prueba/);
+      expect(registrado).not.toMatch(/30111222|persona|ejemplo|buscar|\?/);
+    } finally {
+      espia.mockRestore();
+    }
+  });
+
+  it('fuera de /api no hay rutas', async () => {
+    expect((await request(app.getHttpServer()).get('/health')).status).toBe(404);
+  });
+});
